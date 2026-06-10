@@ -21,6 +21,20 @@ function generateInviteCode(): string {
   return randomBytes(4).toString('hex').toUpperCase()
 }
 
+// GET /api/leagues — list leagues the current user is a member of
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const leagues = await prisma.league.findMany({
+      where: { members: { some: { userId: req.user!.id } } },
+      select: { id: true, name: true, inviteCode: true, createdAt: true, createdBy: true },
+      orderBy: { createdAt: 'asc' },
+    })
+    res.json({ leagues })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/leagues — create a league; creator is auto-added as first member
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {

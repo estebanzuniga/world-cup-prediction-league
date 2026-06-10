@@ -13,6 +13,7 @@ export interface LeaderboardEntry {
   userId: string
   name: string
   avatarUrl: string | null
+  avatarColor: string | null
   totalPoints: number
   predictionsCount: number
   exactScoreCount: number
@@ -27,6 +28,32 @@ export async function getLeaderboard(
 ): Promise<ApiResult<{ leaderboard: LeaderboardEntry[] }>> {
   return apiFetch<{ leaderboard: LeaderboardEntry[] }>(
     `/api/leagues/${leagueId}/leaderboard`,
+  )
+}
+
+export interface MemberPrediction {
+  userId: string
+  predictedHome: number
+  predictedAway: number
+  points: number
+  breakdown: 'exact' | 'result' | 'none'
+}
+
+export interface FinishedMatchWithPredictions {
+  id: string
+  homeTeam: string
+  awayTeam: string
+  kickoffTime: string
+  homeScore: number
+  awayScore: number
+  predictions: MemberPrediction[]
+}
+
+export async function getLeaguePredictions(
+  leagueId: string,
+): Promise<ApiResult<{ matches: FinishedMatchWithPredictions[] }>> {
+  return apiFetch<{ matches: FinishedMatchWithPredictions[] }>(
+    `/api/leagues/${leagueId}/predictions`,
   )
 }
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLeague } from '../contexts/LeagueContext'
+import LeagueSelect from '../components/LeagueSelect'
+import PredictionsModal from '../components/PredictionsModal'
 import { getLeaderboard, type LeaderboardEntry } from '../api/leagues'
 import { isApiError } from '../api'
 
@@ -8,8 +10,8 @@ const AVATAR_COLORS = [
   'bg-rose-600', 'bg-amber-600', 'bg-cyan-600',
 ]
 
-function avatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+function resolveColor(entry: Pick<LeaderboardEntry, 'name' | 'avatarColor'>) {
+  return entry.avatarColor ?? AVATAR_COLORS[entry.name.charCodeAt(0) % AVATAR_COLORS.length]
 }
 
 function initials(name: string) {
@@ -26,53 +28,60 @@ function Rank({ pos }: { pos: number }) {
   return <span className="text-sm font-semibold text-gray-400">{pos + 1}</span>
 }
 
-function Avatar({ name, url }: { name: string; url: string | null }) {
-  if (url) {
+function Avatar({ entry }: { entry: Pick<LeaderboardEntry, 'name' | 'avatarUrl' | 'avatarColor'> }) {
+  if (entry.avatarUrl) {
     return (
       <img
-        src={url}
-        alt={name}
+        src={entry.avatarUrl}
+        alt={entry.name}
         className="h-9 w-9 shrink-0 rounded-full object-cover"
       />
     )
   }
   return (
     <div
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${avatarColor(name)}`}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${resolveColor(entry)}`}
     >
-      {initials(name)}
+      {initials(entry.name)}
     </div>
   )
 }
 
 export default function LeaderboardPage() {
-  const { league, loading: leagueLoading } = useLeague()
+  const { leagues, loading: leagueLoading } = useLeague()
+  const [league, setLeague] = useState<(typeof leagues)[0] | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPredictions, setShowPredictions] = useState(false)
+
+  useEffect(() => {
+    if (leagues.length > 0 && !league) setLeague(leagues[0])
+  }, [leagues])
 
   useEffect(() => {
     if (!league) return
     setLoading(true)
+    setError(null)
     getLeaderboard(league.id).then(result => {
       setLoading(false)
       if (isApiError(result)) { setError(result.error); return }
       setEntries(result.data.leaderboard)
     })
-  }, [league])
+  }, [league?.id])
 
   if (leagueLoading || loading) {
     return (
-      <div className="py-20 text-center text-gray-500">Loading…</div>
+      <div className="py-20 text-center text-gray-500">Cargando…</div>
     )
   }
 
   if (!league) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <p className="text-gray-400">You are not in a league yet.</p>
+        <p className="text-gray-400">Aún no estás en una liga.</p>
         <p className="mt-1 text-sm text-gray-500">
-          Ask someone to share an invite link, or create a league from the Invite page.
+          Pide que te compartan un enlace de invitación o crea una liga desde la página de Invitar.
         </p>
       </main>
     )
@@ -84,15 +93,27 @@ export default function LeaderboardPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-1 text-lg font-bold text-white">{league.name}</h1>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        {leagues.length > 1 ? (
+          <LeagueSelect className="text-lg font-bold" leagues={leagues} value={league} onChange={setLeague} />
+        ) : (
+          <h1 className="text-lg font-bold text-white">{league.name}</h1>
+        )}
+        <button
+          onClick={() => setShowPredictions(true)}
+          className="shrink-0 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-600"
+        >
+          Ver pronósticos
+        </button>
+      </div>
       <p className="mb-6 text-sm text-gray-400">
-        {entries.length} member{entries.length !== 1 ? 's' : ''}
+        {entries.length} miembro{entries.length !== 1 ? 's' : ''}
       </p>
 
       <div className="overflow-hidden rounded-xl bg-gray-800 shadow">
         {entries.length === 0 ? (
           <p className="px-6 py-10 text-center text-gray-500">
-            No points yet — predict some matches!
+            Aún no hay puntos — ¡pronostica algunos partidos!
           </p>
         ) : (
           entries.map((entry, i) => (
@@ -104,7 +125,7 @@ export default function LeaderboardPage() {
                 <Rank pos={i} />
               </div>
 
-              <Avatar name={entry.name} url={entry.avatarUrl} />
+              <Avatar entry={entry} />
 
               <span className="min-w-0 flex-1 truncate font-medium text-white">
                 {entry.name}
@@ -117,13 +138,21 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="w-16 text-right text-xs text-gray-400">
                   <span className="font-semibold text-white">{entry.exactScoreCount}</span>{' '}
-                  exact
+                  exactos
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {showPredictions && (
+        <PredictionsModal
+          leagueId={league.id}
+          members={entries.map(e => ({ userId: e.userId, name: e.name }))}
+          onClose={() => setShowPredictions(false)}
+        />
+      )}
     </main>
   )
 }

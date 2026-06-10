@@ -22,6 +22,31 @@ function generateInviteCode(): string {
   return randomBytes(4).toString('hex').toUpperCase()
 }
 
+// Backfill PointsLedger for all finished matches where `userId` has a prediction.
+// Called when a user joins or creates a league so past results are reflected immediately
+// without waiting for the next syncResults run.
+async function backfillPoints(userId: string, leagueId: string): Promise<void> {
+  const predictions = await prisma.prediction.findMany({
+    where: {
+      userId,
+      match: { status: 'FINISHED', homeScore: { not: null }, awayScore: { not: null } },
+    },
+    include: { match: true },
+  })
+
+  for (const prediction of predictions) {
+    const scored = calculatePoints(
+      { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
+      { homeScore: prediction.match.homeScore!, awayScore: prediction.match.awayScore! },
+    )
+    await prisma.pointsLedger.upsert({
+      where: { userId_matchId_leagueId: { userId, matchId: prediction.matchId, leagueId } },
+      create: { userId, matchId: prediction.matchId, leagueId, points: scored.points, breakdown: { result: scored.breakdown } },
+      update: { points: scored.points, breakdown: { result: scored.breakdown } },
+    })
+  }
+}
+
 // GET /api/leagues — list leagues the current user is a member of
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -55,6 +80,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       ...MEMBER_SELECT,
     })
 
+    await backfillPoints(req.user!.id, league.id)
+
     res.status(201).json({ league })
   } catch (err) {
     next(err)
@@ -87,6 +114,8 @@ router.post('/join', async (req: Request, res: Response, next: NextFunction) => 
     await prisma.leagueMember.create({
       data: { leagueId: league.id, userId: req.user!.id },
     })
+
+    await backfillPoints(req.user!.id, league.id)
 
     const updated = await prisma.league.findUnique({
       where: { id: league.id },

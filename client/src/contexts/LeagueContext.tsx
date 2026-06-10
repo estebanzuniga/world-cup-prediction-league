@@ -9,6 +9,7 @@ interface LeagueContextValue {
   setLeague: (l: League) => void
   loading: boolean
   isOwner: boolean
+  refreshLeagues: () => void
 }
 
 const LeagueContext = createContext<LeagueContextValue>({
@@ -17,26 +18,34 @@ const LeagueContext = createContext<LeagueContextValue>({
   setLeague: () => {},
   loading: true,
   isOwner: false,
+  refreshLeagues: () => {},
 })
 
 export function LeagueProvider({ children }: { children: React.ReactNode }) {
   const [league, setLeagueState] = useState<League | null>(null)
   const [leagues, setLeagues] = useState<League[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
     getMyLeagues().then(result => {
       setLoading(false)
       if (isApiError(result)) return
-      setLeagues(result.data.leagues)
-      if (result.data.leagues.length > 0) setLeagueState(result.data.leagues[0])
+      const fetched = result.data.leagues
+      setLeagues(fetched)
+      setLeagueState(prev => prev ?? fetched[0] ?? null)
     })
-  }, [])
+  }, [refreshKey])
 
   const isOwner = leagues.some(l => l.createdBy === getCurrentUserId())
+  const refreshLeagues = () => {
+    setLoading(true)
+    setRefreshKey(k => k + 1)
+  }
 
   return (
-    <LeagueContext.Provider value={{ league, leagues, setLeague: setLeagueState, loading, isOwner }}>
+    <LeagueContext.Provider value={{ league, leagues, setLeague: setLeagueState, loading, isOwner, refreshLeagues }}>
       {children}
     </LeagueContext.Provider>
   )

@@ -17,6 +17,7 @@ export default function Nav() {
           <NavLink to="/" end className={linkClass}>Partidos</NavLink>
           <NavLink to="/leaderboard" className={linkClass}>Posiciones</NavLink>
           {isOwner && <NavLink to="/invite" className={linkClass}>Invitar</NavLink>}
+          <NavLink to="/join" className={linkClass}>Unirse</NavLink>
         </nav>
         <NavLink to="/profile" className={linkClass}>Perfil</NavLink>
       </div>

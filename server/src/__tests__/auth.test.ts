@@ -121,7 +121,6 @@ describe('POST /api/auth/refresh', () => {
       .send({ email: credentials.email, password: credentials.password })
 
     expect(loginRes.status).toBe(200)
-    const firstToken = loginRes.body.accessToken
 
     const refreshRes = await agent.post('/api/auth/refresh')
 

@@ -47,7 +47,7 @@ export async function syncResults(): Promise<void> {
       // already synced once), then fall back to team names for seeded records
       // that were assigned custom externalIds at seed time.
       const apiExternalId = String(fdoMatch.id)
-      let dbMatch =
+      const dbMatch =
         (await prisma.match.findUnique({ where: { externalId: apiExternalId } })) ??
         (await prisma.match.findFirst({
           where: {

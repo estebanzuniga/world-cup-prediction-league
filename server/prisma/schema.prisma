@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  createdLeagues League[]       @relation("LeagueCreator")
+  memberships    LeagueMember[]
+  predictions    Prediction[]
+  points         PointsLedger[]
+}
+
+model League {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  creator User           @relation("LeagueCreator", fields: [createdBy], references: [id])
+  members LeagueMember[]
+  points  PointsLedger[]
+}
+
+model LeagueMember {
+  leagueId String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([leagueId, userId])
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  homeTeam    String
+  awayTeam    String
+  kickoffTime DateTime
+  homeScore   Int?
+  awayScore   Int?
+  status      MatchStatus @default(SCHEDULED)
+  externalId  String      @unique
+
+  predictions Prediction[]
+  points      PointsLedger[]
+
+  @@index([kickoffTime])
+}
+
+model Prediction {
+  id            String   @id @default(cuid())
+  userId        String
+  matchId       String
+  predictedHome Int
+  predictedAway Int
+  submittedAt   DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId])
+}
+
+model PointsLedger {
+  id        String @id @default(cuid())
+  userId    String
+  matchId   String
+  leagueId  String
+  points    Int
+  breakdown Json
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId, leagueId])
+  @@index([leagueId])
+  @@index([userId])
+}

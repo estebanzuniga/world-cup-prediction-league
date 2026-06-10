@@ -8,6 +8,7 @@ import MatchesPage from './pages/MatchesPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import InvitePage from './pages/InvitePage'
 import JoinPage from './pages/JoinPage'
+import ProfilePage from './pages/ProfilePage'
 
 function RequireAuth() {
   return getToken() ? <Outlet /> : <Navigate to="/login" replace />
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/" element={<MatchesPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/invite" element={<InvitePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

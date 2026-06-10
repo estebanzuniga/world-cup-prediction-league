@@ -13,6 +13,7 @@ model User {
   email        String   @unique
   passwordHash String
   avatarUrl    String?
+  avatarColor  String?
   createdAt    DateTime @default(now())
 
   createdLeagues League[]       @relation("LeagueCreator")

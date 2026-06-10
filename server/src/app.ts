@@ -6,6 +6,7 @@ import authRouter from './routes/auth'
 import leaguesRouter from './routes/leagues'
 import matchesRouter from './routes/matches'
 import predictionsRouter from './routes/predictions'
+import usersRouter from './routes/users'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -19,6 +20,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/leagues', leaguesRouter)
 app.use('/api/matches', matchesRouter)
 app.use('/api/predictions', predictionsRouter)
+app.use('/api/users', usersRouter)
 
 app.use(errorHandler)
 

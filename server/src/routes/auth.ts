@@ -18,8 +18,16 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
   try {
     const { name, email, password } = req.body ?? {}
 
-    if (!name || !email || !password) {
-      res.status(400).json({ error: 'name, email, and password are required' })
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ error: 'Name is required.' })
+      return
+    }
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ error: 'Enter a valid email address.' })
+      return
+    }
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters.' })
       return
     }
 
@@ -31,7 +39,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
     const user = await prisma.user.create({
-      data: { name, email, passwordHash },
+      data: { name: name.trim(), email, passwordHash },
       select: { id: true, name: true, email: true, createdAt: true },
     })
 

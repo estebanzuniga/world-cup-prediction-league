@@ -69,7 +69,7 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { error?: string }
-    return { error: body.error ?? 'Request failed', statusCode: res.status }
+    return { error: body.error ?? 'La solicitud falló', statusCode: res.status }
   }
 
   return { data: (await res.json()) as T }

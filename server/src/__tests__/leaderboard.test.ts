@@ -41,9 +41,9 @@ async function setupUser(u: typeof USER_A): Promise<{ token: string; id: string 
 }
 
 beforeAll(async () => {
-  ;({ token: tokenA, id: userAId } = await setupUser(USER_A))
-  ;({ token: tokenB, id: userBId } = await setupUser(USER_B))
-  ;({ token: tokenC, id: userCId } = await setupUser(USER_C))
+  ({ token: tokenA, id: userAId } = await setupUser(USER_A));
+  ({ token: tokenB, id: userBId } = await setupUser(USER_B));
+  ({ token: tokenC, id: userCId } = await setupUser(USER_C));
 
   // Clean up any test matches from a previous interrupted run
   await prisma.match.deleteMany({ where: { externalId: { in: [MATCH_EXT_1, MATCH_EXT_2, MATCH_EXT_3] } } })
@@ -101,12 +101,17 @@ beforeAll(async () => {
     create: { userId: userAId, matchId: matchId2, predictedHome: 1, predictedAway: 1 },
     update: {},
   })
+  await prisma.prediction.upsert({
+    where: { userId_matchId: { userId: userAId, matchId: matchId3 } },
+    create: { userId: userAId, matchId: matchId3, predictedHome: 2, predictedAway: 0 },
+    update: {},
+  })
 })
 
 // userCId is set in beforeAll; declare it at module scope so TypeScript is happy
-let userCId: string
+let userCId: string;
 // eslint-disable-next-line prefer-const
-;({ token: tokenC, id: userCId } = { token: '', id: '' }) // placeholder — overwritten in beforeAll
+({ token: tokenC, id: userCId } = { token: '', id: '' }) // placeholder — overwritten in beforeAll
 
 afterAll(async () => {
   await prisma.match.deleteMany({ where: { externalId: { in: [MATCH_EXT_1, MATCH_EXT_2, MATCH_EXT_3] } } })
@@ -260,18 +265,73 @@ describe('GET /api/matches', () => {
     expect(match1.myPrediction).toBeNull()
   })
 
-  it('sets myPrediction to null for a scheduled (not finished) match', async () => {
+  it('includes myPrediction without points for a scheduled (not finished) match', async () => {
     const res = await request(app)
       .get('/api/matches')
       .set('Authorization', `Bearer ${tokenA}`)
 
     const match3 = res.body.matches.find((m: { id: string }) => m.id === matchId3)
     expect(match3).toBeDefined()
-    expect(match3.myPrediction).toBeNull()
+    expect(match3.myPrediction).not.toBeNull()
+    expect(match3.myPrediction.predictedHome).toBe(2)
+    expect(match3.myPrediction.predictedAway).toBe(0)
+    expect(match3.myPrediction.points).toBeNull()
+    expect(match3.myPrediction.breakdown).toBeNull()
   })
 
   it('returns 401 without a token', async () => {
     const res = await request(app).get('/api/matches')
     expect(res.status).toBe(401)
+  })
+})
+
+// ── GET /api/leagues/:id/predictions ─────────────────────────────────────────
+
+describe('GET /api/leagues/:id/predictions', () => {
+  it("returns members' predictions with points for finished matches", async () => {
+    const res = await request(app)
+      .get(`/api/leagues/${leagueId}/predictions`)
+      .set('Authorization', `Bearer ${tokenB}`)
+
+    expect(res.status).toBe(200)
+
+    const m1 = res.body.matches.find((m: { id: string }) => m.id === matchId1)
+    expect(m1).toBeDefined()
+    expect(m1.homeScore).toBe(2)
+    expect(m1.awayScore).toBe(1)
+
+    // B can see A's prediction because the match is finished
+    const aPred = m1.predictions.find((p: { userId: string }) => p.userId === userAId)
+    expect(aPred).toBeDefined()
+    expect(aPred.predictedHome).toBe(2)
+    expect(aPred.predictedAway).toBe(1)
+    expect(aPred.points).toBe(3)
+    expect(aPred.breakdown).toBe('exact')
+  })
+
+  it('never includes non-finished matches', async () => {
+    const res = await request(app)
+      .get(`/api/leagues/${leagueId}/predictions`)
+      .set('Authorization', `Bearer ${tokenA}`)
+
+    expect(res.status).toBe(200)
+    const m3 = res.body.matches.find((m: { id: string }) => m.id === matchId3)
+    expect(m3).toBeUndefined()
+  })
+
+  it('returns 403 for a non-member', async () => {
+    const res = await request(app)
+      .get(`/api/leagues/${leagueId}/predictions`)
+      .set('Authorization', `Bearer ${tokenC}`)
+
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 404 for an unknown league', async () => {
+    const res = await request(app)
+      .get('/api/leagues/nonexistent-league-id/predictions')
+      .set('Authorization', `Bearer ${tokenA}`)
+
+    expect(res.status).toBe(404)
   })
 })

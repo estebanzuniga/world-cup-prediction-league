@@ -4,8 +4,9 @@ import { apiFetch } from './client'
 export interface MyPrediction {
   predictedHome: number
   predictedAway: number
-  points: number
-  breakdown: 'exact' | 'result' | 'none'
+  /** null until the match is FINISHED */
+  points: number | null
+  breakdown: 'exact' | 'result' | 'none' | null
 }
 
 export interface Match {

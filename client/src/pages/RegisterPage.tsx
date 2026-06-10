@@ -6,15 +6,15 @@ import { apiFetch } from '../api/client'
 type FieldErrors = { name: string; email: string; password: string }
 
 function validateName(v: string) {
-  return v.trim() ? '' : 'Name is required.'
+  return v.trim() ? '' : 'El nombre es obligatorio.'
 }
 
 function validateEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Enter a valid email address.'
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Ingresa un correo electrónico válido.'
 }
 
 function validatePassword(v: string) {
-  return v.length >= 8 ? '' : 'Password must be at least 8 characters.'
+  return v.length >= 8 ? '' : 'La contraseña debe tener al menos 8 caracteres.'
 }
 
 const inputBase = 'mt-1 w-full rounded-lg border bg-gray-700 px-3 py-2 text-white placeholder-gray-500 focus:outline-none'
@@ -99,14 +99,14 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <span className="text-4xl">⚽</span>
-          <h1 className="mt-2 text-2xl font-bold text-white">Create account</h1>
-          <p className="mt-1 text-sm text-gray-400">World Cup 2026 · Prediction League</p>
+          <h1 className="mt-2 text-2xl font-bold text-white">Crear cuenta</h1>
+          <p className="mt-1 text-sm text-gray-400">Mundial 2026 · Liga de Pronósticos</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="rounded-xl bg-gray-800 p-6 shadow-lg">
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300">Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300">Nombre</label>
               <input
                 id="name"
                 type="text"
@@ -115,13 +115,13 @@ export default function RegisterPage() {
                 onChange={e => handleNameChange(e.target.value)}
                 onBlur={() => setFieldError('name', validateName(name))}
                 className={fieldErrors.name ? inputError : inputNormal}
-                placeholder="Your name"
+                placeholder="Tu nombre"
               />
               {fieldErrors.name && <p className="mt-1 text-xs text-red-400">{fieldErrors.name}</p>}
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Correo electrónico</label>
               <input
                 id="email"
                 type="email"
@@ -130,13 +130,13 @@ export default function RegisterPage() {
                 onChange={e => handleEmailChange(e.target.value)}
                 onBlur={() => setFieldError('email', validateEmail(email))}
                 className={fieldErrors.email ? inputError : inputNormal}
-                placeholder="you@example.com"
+                placeholder="tu@ejemplo.com"
               />
               {fieldErrors.email && <p className="mt-1 text-xs text-red-400">{fieldErrors.email}</p>}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Contraseña</label>
               <input
                 id="password"
                 type="password"
@@ -152,7 +152,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="confirm" className="block text-sm font-medium text-gray-300">
-                Confirm password
+                Confirmar contraseña
               </label>
               <input
                 id="confirm"
@@ -164,7 +164,7 @@ export default function RegisterPage() {
                 placeholder="••••••••"
               />
               {confirmMismatch && (
-                <p className="mt-1 text-xs text-red-400">Passwords do not match.</p>
+                <p className="mt-1 text-xs text-red-400">Las contraseñas no coinciden.</p>
               )}
             </div>
           </div>
@@ -176,13 +176,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="mt-5 w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-400 hover:underline">Sign in</Link>
+          ¿Ya tienes una cuenta?{' '}
+          <Link to="/login" className="text-blue-400 hover:underline">Inicia sesión</Link>
         </p>
       </div>
     </div>

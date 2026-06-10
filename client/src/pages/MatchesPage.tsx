@@ -8,16 +8,19 @@ import MatchCard from '../components/MatchCard'
 import { useLeague } from '../contexts/LeagueContext'
 
 function toDateKey(iso: string) {
-  return iso.slice(0, 10)
+  // Key by the user's local calendar day, not the UTC one
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 function formatDateLabel(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
+  // Spanish weekday/month names, in the user's local timezone
+  return new Date(iso).toLocaleDateString('es', {
     weekday: 'long',
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
   })
 }
 
@@ -97,16 +100,16 @@ export default function MatchesPage() {
   const liveCount = matches.filter(m => m.status === 'LIVE').length
 
   if (loading) {
-    return <div className="py-20 text-center text-gray-500">Loading…</div>
+    return <div className="py-20 text-center text-gray-500">Cargando…</div>
   }
 
   if (!league) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <p className="text-lg font-semibold text-white">You're not in a league yet</p>
+        <p className="text-lg font-semibold text-white">Aún no estás en una liga</p>
         <p className="mt-2 text-sm text-gray-400">
-          You need to be invited to a league before you can make predictions.
-          Ask the league owner for an invite link.
+          Necesitas que te inviten a una liga antes de poder hacer pronósticos.
+          Pídele el enlace de invitación al dueño de la liga.
         </p>
       </main>
     )
@@ -117,7 +120,7 @@ export default function MatchesPage() {
       {liveCount > 0 && (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-900/30 px-3 py-2">
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />
-          <span className="text-sm font-medium text-green-400">{liveCount} match{liveCount > 1 ? 'es' : ''} live now</span>
+          <span className="text-sm font-medium text-green-400">{liveCount} partido{liveCount > 1 ? 's' : ''} en vivo</span>
         </div>
       )}
 
@@ -129,7 +132,7 @@ export default function MatchesPage() {
         <div className="space-y-8">
           {upcomingGroups.length > 0 && (
             <div>
-              <h1 className="mb-4 text-lg font-bold text-white">Upcoming</h1>
+              <h1 className="mb-4 text-lg font-bold text-white">Próximos partidos</h1>
               <div className="space-y-6">
                 {upcomingGroups.map(([key, label, dayMatches]) => (
                   <MatchdaySection
@@ -145,7 +148,7 @@ export default function MatchesPage() {
 
           {pastGroups.length > 0 && (
             <div>
-              <h1 className="mb-4 text-lg font-bold text-white">Results</h1>
+              <h1 className="mb-4 text-lg font-bold text-white">Resultados</h1>
               <div className="space-y-6">
                 {pastGroups.map(([key, label, dayMatches]) => (
                   <MatchdaySection
@@ -160,7 +163,7 @@ export default function MatchesPage() {
           )}
 
           {upcomingGroups.length === 0 && pastGroups.length === 0 && (
-            <p className="py-20 text-center text-gray-500">No matches yet.</p>
+            <p className="py-20 text-center text-gray-500">Aún no hay partidos.</p>
           )}
         </div>
       )}

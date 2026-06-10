@@ -7,8 +7,8 @@ const router = Router()
 router.use(requireAuth)
 
 // GET /api/matches — all matches, ordered by kickoff.
-// For FINISHED matches the caller's prediction and earned points are included.
-// Predictions for non-finished matches are never exposed.
+// The caller's own prediction is always included; points and breakdown are
+// added once the match is FINISHED. Other users' predictions are never exposed.
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [matches, myPredictions] = await Promise.all([
@@ -39,20 +39,22 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       let myPrediction: {
         predictedHome: number
         predictedAway: number
-        points: number
-        breakdown: string
+        points: number | null
+        breakdown: string | null
       } | null = null
 
-      if (isFinished && pred) {
-        const scored = calculatePoints(
-          { predictedHome: pred.predictedHome, predictedAway: pred.predictedAway },
-          { homeScore: match.homeScore!, awayScore: match.awayScore! }
-        )
+      if (pred) {
+        const scored = isFinished
+          ? calculatePoints(
+              { predictedHome: pred.predictedHome, predictedAway: pred.predictedAway },
+              { homeScore: match.homeScore!, awayScore: match.awayScore! }
+            )
+          : null
         myPrediction = {
           predictedHome: pred.predictedHome,
           predictedAway: pred.predictedAway,
-          points: scored.points,
-          breakdown: scored.breakdown,
+          points: scored?.points ?? null,
+          breakdown: scored?.breakdown ?? null,
         }
       }
 

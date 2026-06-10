@@ -35,12 +35,17 @@ async function tryRefresh(): Promise<boolean> {
       method: 'POST',
       credentials: 'include',
     })
-    if (!res.ok) { removeToken(); return false }
+    if (!res.ok) {
+      removeToken()
+      window.dispatchEvent(new Event('session-expired'))
+      return false
+    }
     const body = (await res.json()) as { accessToken: string }
     saveToken(body.accessToken)
     return true
   } catch {
     removeToken()
+    window.dispatchEvent(new Event('session-expired'))
     return false
   }
 }

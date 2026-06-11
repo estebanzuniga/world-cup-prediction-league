@@ -4,7 +4,7 @@
   "workspaces": ["client", "server", "shared"],
   "scripts": {
     "dev": "concurrently -n server,client -c cyan,green \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=client",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
     "start": "npx prisma migrate deploy --schema=server/prisma/schema.prisma && npm run start --workspace=server",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc -p client/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit"

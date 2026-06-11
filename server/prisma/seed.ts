@@ -106,18 +106,74 @@ const matches = [
   { externalId: 'wc2026-l-6', homeTeam: 'Croatia', awayTeam: 'Ghana',   kickoffTime: new Date('2026-06-27T21:00:00Z') },
 ]
 
+const NAME_ALIASES: Record<string, string> = {
+  'Korea Republic':               'South Korea',
+  'IR Iran':                      'Iran',
+  "Côte d'Ivoire":                'Ivory Coast',
+  'Congo DR':                     'DR Congo',
+  'Democratic Republic of Congo': 'DR Congo',
+  'USA':                          'United States',
+  'Czech Republic':               'Czechia',
+  'Bosnia-Herzegovina':           'Bosnia and Herzegovina',
+  'Turkey':                       'Türkiye',
+  'Cape Verde Islands':           'Cape Verde',
+}
+
+async function syncCrests() {
+  const key = process.env.FOOTBALL_DATA_API_KEY
+  if (!key) {
+    console.log('FOOTBALL_DATA_API_KEY not set — skipping crest sync.')
+    return
+  }
+
+  console.log('Syncing team crests from football-data.org…')
+  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
+    headers: { 'X-Auth-Token': key },
+  })
+  if (!res.ok) {
+    console.error(`Crest sync failed: ${res.status} ${res.statusText}`)
+    return
+  }
+
+  const { matches: apiMatches } = await res.json() as {
+    matches: Array<{ homeTeam: { name: string; crest: string }; awayTeam: { name: string; crest: string } }>
+  }
+  const resolve = (name: string) => NAME_ALIASES[name] ?? name
+  let updated = 0
+
+  for (const m of apiMatches) {
+    if (!m.homeTeam.name || !m.awayTeam.name) continue
+    const home = resolve(m.homeTeam.name)
+    const away = resolve(m.awayTeam.name)
+    let result = await prisma.match.updateMany({
+      where: { homeTeam: home, awayTeam: away },
+      data: { homeTeamCrestUrl: m.homeTeam.crest, awayTeamCrestUrl: m.awayTeam.crest },
+    })
+    if (result.count === 0) {
+      result = await prisma.match.updateMany({
+        where: { homeTeam: away, awayTeam: home },
+        data: { homeTeamCrestUrl: m.awayTeam.crest, awayTeamCrestUrl: m.homeTeam.crest },
+      })
+    }
+    if (result.count > 0) updated++
+  }
+
+  console.log(`Updated crests for ${updated} match(es).`)
+}
+
 async function main() {
   console.log(`Seeding ${matches.length} group stage matches…`)
 
   for (const match of matches) {
     await prisma.match.upsert({
       where: { externalId: match.externalId },
-      update: {},
+      update: { homeTeam: match.homeTeam, awayTeam: match.awayTeam, kickoffTime: match.kickoffTime },
       create: { ...match, status: 'SCHEDULED' },
     })
   }
 
   console.log('Done.')
+  await syncCrests()
 }
 
 main()

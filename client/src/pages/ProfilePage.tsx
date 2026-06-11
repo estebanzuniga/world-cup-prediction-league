@@ -105,6 +105,8 @@ export default function ProfilePage() {
       >
         Cerrar sesión
       </button>
+
+      <p className="mt-8 text-center text-xs text-gray-600">Creado por Esteban ⚽</p>
     </main>
   )
 }

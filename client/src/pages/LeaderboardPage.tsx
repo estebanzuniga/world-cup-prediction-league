@@ -48,7 +48,7 @@ function Avatar({ entry }: { entry: Pick<LeaderboardEntry, 'name' | 'avatarUrl' 
 }
 
 export default function LeaderboardPage() {
-  const { leagues, loading: leagueLoading } = useLeague()
+  const { leagues, loading: leagueLoading, refreshKey } = useLeague()
   const [league, setLeague] = useState<(typeof leagues)[0] | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -57,7 +57,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     if (leagues.length > 0 && !league) setLeague(leagues[0])
-  }, [leagues])
+  }, [leagues, league])
 
   useEffect(() => {
     if (!league) return
@@ -68,7 +68,7 @@ export default function LeaderboardPage() {
       if (isApiError(result)) { setError(result.error); return }
       setEntries(result.data.leaderboard)
     })
-  }, [league?.id])
+  }, [league?.id, league, refreshKey])
 
   if (leagueLoading || loading) {
     return (
@@ -79,9 +79,13 @@ export default function LeaderboardPage() {
   if (!league) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <p className="text-gray-400">Aún no estás en una liga.</p>
-        <p className="mt-1 text-sm text-gray-500">
-          Pide que te compartan un enlace de invitación o crea una liga desde la página de Invitar.
+        <p className="text-lg font-semibold text-white">Aún no estás en una liga</p>
+        <p className="mt-2 text-sm text-gray-400">
+          Necesitas que te inviten a una liga antes de poder hacer pronósticos.
+          Pídele el enlace de invitación al dueño de la liga.
+        </p>
+        <p className="mt-2 text-sm text-gray-400">
+          Si ya te han invitado a una liga pero no aparece aquí, intenta refrescando la página.
         </p>
       </main>
     )

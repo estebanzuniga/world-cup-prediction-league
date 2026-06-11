@@ -10,6 +10,7 @@ interface LeagueContextValue {
   loading: boolean
   isOwner: boolean
   refreshLeagues: () => void
+  refreshKey: number
 }
 
 const LeagueContext = createContext<LeagueContextValue>({
@@ -19,6 +20,7 @@ const LeagueContext = createContext<LeagueContextValue>({
   loading: true,
   isOwner: false,
   refreshLeagues: () => {},
+  refreshKey: 0,
 })
 
 export function LeagueProvider({ children }: { children: React.ReactNode }) {
@@ -45,7 +47,7 @@ export function LeagueProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <LeagueContext.Provider value={{ league, leagues, setLeague: setLeagueState, loading, isOwner, refreshLeagues }}>
+    <LeagueContext.Provider value={{ league, leagues, setLeague: setLeagueState, loading, isOwner, refreshLeagues, refreshKey }}>
       {children}
     </LeagueContext.Provider>
   )

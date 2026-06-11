@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import PWAInstall from '@khmyznikov/pwa-install/react-legacy'
 import { getToken } from './api'
-import { LeagueProvider } from './contexts/LeagueContext'
+import { LeagueProvider, useLeague } from './contexts/LeagueContext'
+import { usePullToRefresh } from './hooks/usePullToRefresh'
 import Nav from './components/Nav'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -30,12 +31,32 @@ function RequireAuth() {
   return <Outlet />
 }
 
+function AppInner() {
+  const { refreshLeagues, loading } = useLeague()
+  const { isRefreshing, setIsRefreshing } = usePullToRefresh(refreshLeagues)
+
+  useEffect(() => {
+    if (!loading) setIsRefreshing(false)
+  }, [loading, setIsRefreshing])
+
+  return (
+    <>
+      {isRefreshing && (
+        <div className="flex justify-center py-3">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-green-400" />
+        </div>
+      )}
+      <Outlet />
+      <Nav />
+    </>
+  )
+}
+
 function AppLayout() {
   return (
     <LeagueProvider>
       <div className="min-h-screen bg-gray-900 pb-24" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <Outlet />
-        <Nav />
+        <AppInner />
       </div>
     </LeagueProvider>
   )

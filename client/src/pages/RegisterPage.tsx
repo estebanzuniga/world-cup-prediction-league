@@ -22,9 +22,9 @@ const inputNormal = `${inputBase} border-gray-600 focus:border-blue-400`
 const inputError = `${inputBase} border-red-500 focus:border-red-500`
 
 export default function RegisterPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const from = searchParams.get('from') ?? '/'
-  const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -102,7 +102,7 @@ export default function RegisterPage() {
         <div className="mb-8 text-center">
           <span className="text-4xl">⚽</span>
           <h1 className="mt-2 text-2xl font-bold text-white">Crear cuenta</h1>
-          <p className="mt-1 text-sm text-gray-400">Mundial 2026 · Liga de Pronósticos</p>
+          <p className="mt-1 text-sm text-gray-400">Goalcaster · Mundial 2026</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="rounded-xl bg-gray-800 p-6 shadow-lg">

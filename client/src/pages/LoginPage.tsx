@@ -3,9 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { login, saveToken, isApiError } from '../api'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const from = searchParams.get('from') ?? '/'
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,7 +27,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <span className="text-4xl">⚽</span>
-          <h1 className="mt-2 text-2xl font-bold text-white">Liga de Pronósticos</h1>
+          <h1 className="mt-2 text-2xl font-bold text-white">Goalcaster</h1>
           <p className="mt-1 text-sm text-gray-400">Mundial 2026</p>
         </div>
 

@@ -190,12 +190,18 @@ router.get('/:id/leaderboard', async (req: Request, res: Response, next: NextFun
       if ((row.breakdown as Record<string, unknown>)?.result === 'exact') s.exactScoreCount++
       stats.set(row.userId, s)
     }
-    const leaderboard = league.members
+    const sorted = league.members
       .map((m) => {
         const s = stats.get(m.userId) ?? { totalPoints: 0, predictionsCount: 0, exactScoreCount: 0 }
         return { userId: m.userId, name: m.user.name, avatarUrl: m.user.avatarUrl, avatarColor: m.user.avatarColor, ...s }
       })
-      .sort((a, b) => b.totalPoints - a.totalPoints)
+      .sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name))
+
+    let position = 1
+    const leaderboard = sorted.map((entry, i) => {
+      if (i > 0 && entry.totalPoints < sorted[i - 1].totalPoints) position = i + 1
+      return { ...entry, position }
+    })
     res.json({ leaderboard })
   } catch (err) {
     next(err)

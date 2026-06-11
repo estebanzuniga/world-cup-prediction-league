@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { isApiError } from '../api'
 import { joinLeague } from '../api/leagues'
+import { useLeague } from '../contexts/LeagueContext'
 
 export default function JoinPage() {
   const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
+  const { refreshLeagues } = useLeague()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -15,10 +17,11 @@ export default function JoinPage() {
       if (isApiError(result)) {
         setError(result.error)
       } else {
+        refreshLeagues()
         navigate('/', { replace: true })
       }
     })
-  }, [token, navigate])
+  }, [token, navigate, refreshLeagues])
 
   if (error) {
     return (

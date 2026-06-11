@@ -22,6 +22,7 @@ export interface LeaderboardEntry {
   totalPoints: number
   predictionsCount: number
   exactScoreCount: number
+  position: number
 }
 
 export interface MemberPrediction {

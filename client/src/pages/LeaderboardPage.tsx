@@ -22,10 +22,10 @@ function initials(name: string) {
 }
 
 function Rank({ pos }: { pos: number }) {
-  if (pos === 0) return <span className="text-xl">🥇</span>
-  if (pos === 1) return <span className="text-xl">🥈</span>
-  if (pos === 2) return <span className="text-xl">🥉</span>
-  return <span className="text-sm font-semibold text-gray-400">{pos + 1}</span>
+  if (pos === 1) return <span className="text-xl">🥇</span>
+  if (pos === 2) return <span className="text-xl">🥈</span>
+  if (pos === 3) return <span className="text-xl">🥉</span>
+  return <span className="text-sm font-semibold text-gray-400">{pos}</span>
 }
 
 function Avatar({ entry }: { entry: Pick<LeaderboardEntry, 'name' | 'avatarUrl' | 'avatarColor'> }) {
@@ -128,7 +128,7 @@ export default function LeaderboardPage() {
               className={`flex items-center gap-4 px-4 py-3 ${i > 0 ? 'border-t border-gray-700' : ''}`}
             >
               <div className="flex w-8 items-center justify-center">
-                <Rank pos={i} />
+                <Rank pos={entry.position} />
               </div>
 
               <Avatar entry={entry} />

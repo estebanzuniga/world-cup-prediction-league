@@ -33,10 +33,12 @@ function ScoreInput({
   id,
   value,
   onChange,
+  disabled = false,
 }: {
   id: string
   value: string
   onChange: (v: string) => void
+  disabled?: boolean
 }) {
   return (
     <input
@@ -47,9 +49,10 @@ function ScoreInput({
       maxLength={2}
       placeholder="–"
       value={value}
+      disabled={disabled}
       onFocus={e => e.target.select()}
       onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 2))}
-      className="w-12 rounded border border-gray-600 bg-gray-700 px-1 py-2 text-center text-lg font-mono text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+      className={`w-12 rounded border border-gray-600 bg-gray-700 px-1 py-2 text-center text-lg font-mono text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none${disabled ? ' cursor-not-allowed opacity-60' : ''}`}
     />
   )
 }
@@ -92,6 +95,7 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
   const isUpcoming = match.status === 'SCHEDULED'
   const isLive = match.status === 'LIVE'
   const isFinished = match.status === 'FINISHED'
+  const isLocked = new Date() >= new Date(match.kickoffTime)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -149,9 +153,9 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
               onSubmit={handleSubmit}
               className="flex items-center gap-1.5"
             >
-              <ScoreInput id={`home-${match.id}`} value={home} onChange={setHome} />
+              <ScoreInput id={`home-${match.id}`} value={home} onChange={setHome} disabled={isLocked} />
               <span className="text-gray-400">–</span>
-              <ScoreInput id={`away-${match.id}`} value={away} onChange={setAway} />
+              <ScoreInput id={`away-${match.id}`} value={away} onChange={setAway} disabled={isLocked} />
             </form>
           )}
         </div>
@@ -182,7 +186,7 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
           <button
             type="submit"
             form={`predict-${match.id}`}
-            disabled={saving || home === '' || away === ''}
+            disabled={isLocked || saving || home === '' || away === ''}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
           >
             {saving ? '…' : hasExisting ? 'Actualizar' : 'Pronosticar'}

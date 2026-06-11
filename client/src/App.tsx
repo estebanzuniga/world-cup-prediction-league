@@ -33,7 +33,7 @@ function RequireAuth() {
 function AppLayout() {
   return (
     <LeagueProvider>
-      <div className="min-h-screen bg-gray-900 pb-24">
+      <div className="min-h-screen bg-gray-900 pb-24" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <Outlet />
         <Nav />
       </div>

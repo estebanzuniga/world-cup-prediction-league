@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { login, saveToken, isApiError } from '../api'
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams()
+  const from = searchParams.get('from') ?? '/'
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,7 +19,7 @@ export default function LoginPage() {
     setLoading(false)
     if (isApiError(result)) { setError(result.error); return }
     saveToken(result.data.accessToken)
-    navigate('/')
+    navigate(from, { replace: true })
   }
 
   return (
@@ -77,7 +79,7 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-gray-500">
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-blue-400 hover:underline">
+          <Link to={from !== '/' ? `/register?from=${encodeURIComponent(from)}` : '/register'} className="text-blue-400 hover:underline">
             Regístrate
           </Link>
         </p>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { isApiError, saveToken } from '../api'
 import { apiFetch } from '../api/client'
 
@@ -22,6 +22,8 @@ const inputNormal = `${inputBase} border-gray-600 focus:border-blue-400`
 const inputError = `${inputBase} border-red-500 focus:border-red-500`
 
 export default function RegisterPage() {
+  const [searchParams] = useSearchParams()
+  const from = searchParams.get('from') ?? '/'
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -89,7 +91,7 @@ export default function RegisterPage() {
     }
 
     saveToken(loginResult.data.accessToken)
-    navigate('/')
+    navigate(from, { replace: true })
   }
 
   const confirmMismatch = confirm.length > 0 && confirm !== password
@@ -182,7 +184,7 @@ export default function RegisterPage() {
 
         <p className="mt-4 text-center text-sm text-gray-500">
           ¿Ya tienes una cuenta?{' '}
-          <Link to="/login" className="text-blue-400 hover:underline">Inicia sesión</Link>
+          <Link to={from !== '/' ? `/login?from=${encodeURIComponent(from)}` : '/login'} className="text-blue-400 hover:underline">Inicia sesión</Link>
         </p>
       </div>
     </div>

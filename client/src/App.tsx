@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { getToken } from './api'
 import { LeagueProvider } from './contexts/LeagueContext'
 import Nav from './components/Nav'
@@ -22,15 +22,19 @@ function SessionGuard() {
 }
 
 function RequireAuth() {
-  return getToken() ? <Outlet /> : <Navigate to="/login" replace />
+  const location = useLocation()
+  if (!getToken()) {
+    return <Navigate to={`/login?from=${encodeURIComponent(location.pathname)}`} replace />
+  }
+  return <Outlet />
 }
 
 function AppLayout() {
   return (
     <LeagueProvider>
       <div className="min-h-screen bg-gray-900 pb-24">
-        <Nav />
         <Outlet />
+        <Nav />
       </div>
     </LeagueProvider>
   )
@@ -43,13 +47,12 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/join/:code" element={<JoinPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<MatchesPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/invite" element={<InvitePage />} />
-            <Route path="/join" element={<JoinPage />} />
+            <Route path="/join/:token" element={<JoinPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>

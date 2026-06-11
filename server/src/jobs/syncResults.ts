@@ -33,11 +33,15 @@ export async function syncResults(): Promise<void> {
     return
   }
 
+  const startedAt = new Date().toISOString()
+  console.log(`[syncResults] ${startedAt} — starting sync`)
+
   let matchesSynced = 0
   let ledgerRowsWritten = 0
 
   try {
     const fdoMatches = await fetchFinishedMatches()
+    console.log(`[syncResults] API returned ${fdoMatches.length} finished match(es)`)
 
     for (const fdoMatch of fdoMatches) {
       const { home: homeScore, away: awayScore } = fdoMatch.score.fullTime
@@ -56,7 +60,10 @@ export async function syncResults(): Promise<void> {
           },
         }))
 
-      if (!dbMatch) continue
+      if (!dbMatch) {
+        console.warn(`[syncResults] No DB match found for: ${fdoMatch.homeTeam.name} vs ${fdoMatch.awayTeam.name}`)
+        continue
+      }
 
       // Idempotent: skip matches already fully settled
       if (dbMatch.status === 'FINISHED' && dbMatch.homeScore !== null) continue
@@ -72,6 +79,7 @@ export async function syncResults(): Promise<void> {
         },
       })
       matchesSynced++
+      console.log(`[syncResults] Settled: ${updated.homeTeam} ${homeScore}–${awayScore} ${updated.awayTeam}`)
 
       // Resolve all predictions for this match, together with the user's league memberships
       const predictions = await prisma.prediction.findMany({
@@ -83,6 +91,9 @@ export async function syncResults(): Promise<void> {
         const scored = calculatePoints(
           { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
           { homeScore, awayScore }
+        )
+        console.log(
+          `[syncResults]   ${prediction.user.name ?? prediction.userId} predicted ${prediction.predictedHome}–${prediction.predictedAway} → ${scored.points}pt (${scored.breakdown})`
         )
 
         for (const { leagueId } of prediction.user.memberships) {
@@ -111,9 +122,13 @@ export async function syncResults(): Promise<void> {
       }
     }
 
-    console.log(
-      `[syncResults] ${new Date().toISOString()} — synced ${matchesSynced} match(es), wrote ${ledgerRowsWritten} ledger row(s)`
-    )
+    if (matchesSynced === 0) {
+      console.log(`[syncResults] Nothing new to settle`)
+    } else {
+      console.log(
+        `[syncResults] Done — settled ${matchesSynced} match(es), wrote ${ledgerRowsWritten} ledger row(s)`
+      )
+    }
   } catch (err) {
     console.error('[syncResults] Sync failed:', err)
   }
@@ -123,6 +138,6 @@ export async function syncResults(): Promise<void> {
 // The job is a no-op outside the active window because the API will return no
 // newly finished matches, so this guard is belt-and-suspenders rather than critical.
 export function registerSyncJob(): void {
-  cron.schedule('*/5 12-23 * * *', () => void syncResults(), { timezone: 'UTC' })
-  console.log('[syncResults] Job registered — */5 12-23 * * * UTC')
+  cron.schedule('*/5 * * * *', () => void syncResults(), { timezone: 'UTC' })
+  console.log('[syncResults] Job registered — */5 * * * * UTC')
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import PWAInstall from '@khmyznikov/pwa-install/react-legacy'
 import { getToken } from './api'
 import { LeagueProvider } from './contexts/LeagueContext'
 import Nav from './components/Nav'
@@ -43,6 +44,12 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
+      <PWAInstall
+        name="Goalcaster"
+        icon="/icon-512.png"
+        description="Pronostica los partidos del Mundial 2026 y compite con tus amigos."
+        manifestUrl="/manifest.webmanifest"
+      />
       <SessionGuard />
       <Routes>
         <Route path="/login" element={<LoginPage />} />

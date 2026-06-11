@@ -18,13 +18,10 @@ const MEMBER_SELECT = {
   },
 }
 
-function generateInviteCode(): string {
+function generateToken(): string {
   return randomBytes(4).toString('hex').toUpperCase()
 }
 
-// Backfill PointsLedger for all finished matches where `userId` has a prediction.
-// Called when a user joins or creates a league so past results are reflected immediately
-// without waiting for the next syncResults run.
 async function backfillPoints(userId: string, leagueId: string): Promise<void> {
   const predictions = await prisma.prediction.findMany({
     where: {
@@ -33,7 +30,6 @@ async function backfillPoints(userId: string, leagueId: string): Promise<void> {
     },
     include: { match: true },
   })
-
   for (const prediction of predictions) {
     const scored = calculatePoints(
       { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
@@ -47,12 +43,12 @@ async function backfillPoints(userId: string, leagueId: string): Promise<void> {
   }
 }
 
-// GET /api/leagues — list leagues the current user is a member of
+// GET /api/leagues
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const leagues = await prisma.league.findMany({
       where: { members: { some: { userId: req.user!.id } } },
-      select: { id: true, name: true, inviteCode: true, createdAt: true, createdBy: true },
+      select: { id: true, name: true, createdAt: true, createdBy: true },
       orderBy: { createdAt: 'asc' },
     })
     res.json({ leagues })
@@ -61,7 +57,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-// POST /api/leagues — create a league; creator is auto-added as first member
+// POST /api/leagues
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.body ?? {}
@@ -69,70 +65,107 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       res.status(400).json({ error: 'name is required' })
       return
     }
-
     const league = await prisma.league.create({
       data: {
         name: name.trim(),
-        inviteCode: generateInviteCode(),
         createdBy: req.user!.id,
         members: { create: { userId: req.user!.id } },
       },
       ...MEMBER_SELECT,
     })
-
     await backfillPoints(req.user!.id, league.id)
-
     res.status(201).json({ league })
   } catch (err) {
     next(err)
   }
 })
 
-// POST /api/leagues/join — join a league via invite code
+// POST /api/leagues/join
 router.post('/join', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { inviteCode } = req.body ?? {}
-    if (!inviteCode || typeof inviteCode !== 'string') {
-      res.status(400).json({ error: 'inviteCode is required' })
+    const { token } = req.body ?? {}
+    if (!token || typeof token !== 'string') {
+      res.status(400).json({ error: 'token is required' })
       return
     }
 
-    const league = await prisma.league.findUnique({ where: { inviteCode } })
-    if (!league) {
-      res.status(404).json({ error: 'Invalid invite code' })
+    const inviteToken = await prisma.inviteToken.findUnique({ where: { token } })
+    if (!inviteToken) {
+      res.status(404).json({ error: 'Código de invitación inválido' })
+      return
+    }
+    if (inviteToken.usedAt) {
+      res.status(410).json({ error: 'Este enlace ya fue utilizado' })
+      return
+    }
+    if (inviteToken.expiresAt < new Date()) {
+      res.status(410).json({ error: 'Este enlace de invitación ha expirado' })
       return
     }
 
     const alreadyMember = await prisma.leagueMember.findUnique({
-      where: { leagueId_userId: { leagueId: league.id, userId: req.user!.id } },
+      where: { leagueId_userId: { leagueId: inviteToken.leagueId, userId: req.user!.id } },
     })
     if (alreadyMember) {
-      res.status(409).json({ error: 'Already a member of this league' })
+      res.status(409).json({ error: 'Ya eres miembro de esta liga' })
       return
     }
 
-    await prisma.leagueMember.create({
-      data: { leagueId: league.id, userId: req.user!.id },
-    })
+    await prisma.$transaction([
+      prisma.leagueMember.create({ data: { leagueId: inviteToken.leagueId, userId: req.user!.id } }),
+      prisma.inviteToken.update({ where: { token }, data: { usedAt: new Date(), usedBy: req.user!.id } }),
+    ])
 
-    await backfillPoints(req.user!.id, league.id)
+    await backfillPoints(req.user!.id, inviteToken.leagueId)
 
-    const updated = await prisma.league.findUnique({
-      where: { id: league.id },
-      ...MEMBER_SELECT,
-    })
-
-    res.json({ league: updated })
+    const league = await prisma.league.findUnique({ where: { id: inviteToken.leagueId }, ...MEMBER_SELECT })
+    res.json({ league })
   } catch (err) {
     next(err)
   }
 })
 
-// GET /api/leagues/:id/leaderboard — member standings for a league
+// POST /api/leagues/:id/invite-tokens — generate a new invite token (creator only)
+router.post('/:id/invite-tokens', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const league = await prisma.league.findUnique({ where: { id: req.params.id } })
+    if (!league) { res.status(404).json({ error: 'Liga no encontrada' }); return }
+    if (league.createdBy !== req.user!.id) {
+      res.status(403).json({ error: 'Solo el creador de la liga puede generar enlaces de invitación' })
+      return
+    }
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const inviteToken = await prisma.inviteToken.create({
+      data: { token: generateToken(), leagueId: league.id, createdBy: req.user!.id, expiresAt },
+    })
+    res.status(201).json({ token: inviteToken.token, expiresAt: inviteToken.expiresAt, usedAt: null })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/leagues/:id/invite-tokens — list recent tokens (creator only)
+router.get('/:id/invite-tokens', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const league = await prisma.league.findUnique({ where: { id: req.params.id } })
+    if (!league) { res.status(404).json({ error: 'Liga no encontrada' }); return }
+    if (league.createdBy !== req.user!.id) { res.status(403).json({ error: 'Forbidden' }); return }
+    const tokens = await prisma.inviteToken.findMany({
+      where: { leagueId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: { token: true, expiresAt: true, usedAt: true },
+    })
+    res.json({ tokens })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/leagues/:id/leaderboard
 router.get('/:id/leaderboard', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const leagueId = req.params.id
-
     const [league, ledgerRows] = await Promise.all([
       prisma.league.findUnique({
         where: { id: leagueId },
@@ -143,24 +176,12 @@ router.get('/:id/leaderboard', async (req: Request, res: Response, next: NextFun
           },
         },
       }),
-      prisma.pointsLedger.findMany({
-        where: { leagueId },
-        select: { userId: true, points: true, breakdown: true },
-      }),
+      prisma.pointsLedger.findMany({ where: { leagueId }, select: { userId: true, points: true, breakdown: true } }),
     ])
-
-    if (!league) {
-      res.status(404).json({ error: 'League not found' })
-      return
-    }
-
+    if (!league) { res.status(404).json({ error: 'League not found' }); return }
     const isMember = league.members.some((m) => m.userId === req.user!.id)
-    if (!isMember) {
-      res.status(403).json({ error: 'Forbidden' })
-      return
-    }
+    if (!isMember) { res.status(403).json({ error: 'Forbidden' }); return }
 
-    // Aggregate ledger rows per user
     const stats = new Map<string, { totalPoints: number; predictionsCount: number; exactScoreCount: number }>()
     for (const row of ledgerRows) {
       const s = stats.get(row.userId) ?? { totalPoints: 0, predictionsCount: 0, exactScoreCount: 0 }
@@ -169,78 +190,43 @@ router.get('/:id/leaderboard', async (req: Request, res: Response, next: NextFun
       if ((row.breakdown as Record<string, unknown>)?.result === 'exact') s.exactScoreCount++
       stats.set(row.userId, s)
     }
-
     const leaderboard = league.members
       .map((m) => {
         const s = stats.get(m.userId) ?? { totalPoints: 0, predictionsCount: 0, exactScoreCount: 0 }
-        return {
-          userId: m.userId,
-          name: m.user.name,
-          avatarUrl: m.user.avatarUrl,
-          avatarColor: m.user.avatarColor,
-          totalPoints: s.totalPoints,
-          predictionsCount: s.predictionsCount,
-          exactScoreCount: s.exactScoreCount,
-        }
+        return { userId: m.userId, name: m.user.name, avatarUrl: m.user.avatarUrl, avatarColor: m.user.avatarColor, ...s }
       })
       .sort((a, b) => b.totalPoints - a.totalPoints)
-
     res.json({ leaderboard })
   } catch (err) {
     next(err)
   }
 })
 
-// GET /api/leagues/:id/predictions — every member's prediction for FINISHED
-// matches only, with points. Predictions for upcoming matches stay hidden so
-// nobody can copy picks before kickoff. Members only.
+// GET /api/leagues/:id/predictions
 router.get('/:id/predictions', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const leagueId = req.params.id
-
-    const league = await prisma.league.findUnique({
-      where: { id: leagueId },
-      include: { members: { select: { userId: true } } },
-    })
-
-    if (!league) {
-      res.status(404).json({ error: 'League not found' })
-      return
-    }
-
+    const league = await prisma.league.findUnique({ where: { id: leagueId }, include: { members: { select: { userId: true } } } })
+    if (!league) { res.status(404).json({ error: 'League not found' }); return }
     const isMember = league.members.some((m) => m.userId === req.user!.id)
-    if (!isMember) {
-      res.status(403).json({ error: 'Forbidden' })
-      return
-    }
+    if (!isMember) { res.status(403).json({ error: 'Forbidden' }); return }
 
     const memberIds = league.members.map((m) => m.userId)
-
     const matches = await prisma.match.findMany({
       where: { status: 'FINISHED', homeScore: { not: null }, awayScore: { not: null } },
       orderBy: { kickoffTime: 'desc' },
-      select: {
-        id: true,
-        homeTeam: true,
-        awayTeam: true,
-        kickoffTime: true,
-        homeScore: true,
-        awayScore: true,
-      },
+      select: { id: true, homeTeam: true, awayTeam: true, homeTeamCrestUrl: true, awayTeamCrestUrl: true, kickoffTime: true, homeScore: true, awayScore: true },
     })
-
     const predictions = await prisma.prediction.findMany({
       where: { matchId: { in: matches.map((m) => m.id) }, userId: { in: memberIds } },
       select: { matchId: true, userId: true, predictedHome: true, predictedAway: true },
     })
-
     const byMatch = new Map<string, typeof predictions>()
     for (const p of predictions) {
       const list = byMatch.get(p.matchId) ?? []
       list.push(p)
       byMatch.set(p.matchId, list)
     }
-
     const result = matches.map((match) => ({
       ...match,
       predictions: (byMatch.get(match.id) ?? []).map((p) => {
@@ -248,41 +234,22 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
           { predictedHome: p.predictedHome, predictedAway: p.predictedAway },
           { homeScore: match.homeScore!, awayScore: match.awayScore! }
         )
-        return {
-          userId: p.userId,
-          predictedHome: p.predictedHome,
-          predictedAway: p.predictedAway,
-          points: scored.points,
-          breakdown: scored.breakdown,
-        }
+        return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: scored.points, breakdown: scored.breakdown }
       }),
     }))
-
     res.json({ matches: result })
   } catch (err) {
     next(err)
   }
 })
 
-// GET /api/leagues/:id — fetch league details; only accessible to members
+// GET /api/leagues/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const league = await prisma.league.findUnique({
-      where: { id: req.params.id },
-      ...MEMBER_SELECT,
-    })
-
-    if (!league) {
-      res.status(404).json({ error: 'League not found' })
-      return
-    }
-
+    const league = await prisma.league.findUnique({ where: { id: req.params.id }, ...MEMBER_SELECT })
+    if (!league) { res.status(404).json({ error: 'League not found' }); return }
     const isMember = league.members.some((m) => m.userId === req.user!.id)
-    if (!isMember) {
-      res.status(403).json({ error: 'Forbidden' })
-      return
-    }
-
+    if (!isMember) { res.status(403).json({ error: 'Forbidden' }); return }
     res.json({ league })
   } catch (err) {
     next(err)

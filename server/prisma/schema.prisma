@@ -20,18 +20,37 @@ model User {
   memberships    LeagueMember[]
   predictions    Prediction[]
   points         PointsLedger[]
+  createdTokens  InviteToken[]  @relation("InviteTokenCreator")
+  usedTokens     InviteToken[]  @relation("InviteTokenUsed")
 }
 
 model League {
-  id         String   @id @default(cuid())
-  name       String
-  inviteCode String   @unique
-  createdBy  String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  createdBy String
+  createdAt DateTime @default(now())
 
-  creator User           @relation("LeagueCreator", fields: [createdBy], references: [id])
-  members LeagueMember[]
-  points  PointsLedger[]
+  creator      User           @relation("LeagueCreator", fields: [createdBy], references: [id])
+  members      LeagueMember[]
+  points       PointsLedger[]
+  inviteTokens InviteToken[]
+}
+
+model InviteToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  leagueId  String
+  createdBy String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+  usedBy    String?
+
+  league     League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  creator    User   @relation("InviteTokenCreator", fields: [createdBy], references: [id])
+  usedByUser User?  @relation("InviteTokenUsed", fields: [usedBy], references: [id])
+
+  @@index([leagueId])
 }
 
 model LeagueMember {

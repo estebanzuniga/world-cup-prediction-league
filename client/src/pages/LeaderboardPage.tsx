@@ -94,11 +94,13 @@ export default function LeaderboardPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
       <div className="mb-1 flex items-center justify-between gap-3">
-        {leagues.length > 1 ? (
-          <LeagueSelect className="text-lg font-bold" leagues={leagues} value={league} onChange={setLeague} />
-        ) : (
-          <h1 className="text-lg font-bold text-white">{league.name}</h1>
-        )}
+        <div className="min-w-0 flex-1">
+          {leagues.length > 1 ? (
+            <LeagueSelect className="w-full text-lg font-bold" leagues={leagues} value={league} onChange={setLeague} />
+          ) : (
+            <h1 className="truncate text-lg font-bold text-white">{league.name}</h1>
+          )}
+        </div>
         <button
           onClick={() => setShowPredictions(true)}
           className="shrink-0 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-600"
@@ -131,12 +133,12 @@ export default function LeaderboardPage() {
                 {entry.name}
               </span>
 
-              <div className="flex items-center gap-5 text-sm">
+              <div className="flex items-center gap-3 text-sm">
                 <div className="text-right">
                   <span className="text-xl font-bold text-white">{entry.totalPoints}</span>
                   <span className="ml-1 text-xs text-gray-400">pts</span>
                 </div>
-                <div className="w-16 text-right text-xs text-gray-400">
+                <div className="hidden w-20 text-right text-xs text-gray-400 sm:block">
                   <span className="font-semibold text-white">{entry.exactScoreCount}</span>{' '}
                   exactos
                 </div>

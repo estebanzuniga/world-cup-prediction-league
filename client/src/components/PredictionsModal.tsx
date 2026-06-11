@@ -11,6 +11,17 @@ interface Props {
   onClose: () => void
 }
 
+function MatchCrest({ url, name }: { url: string | null; name: string }) {
+  return (
+    <div className="h-6 w-6 overflow-hidden rounded-full ring-1 ring-white/20">
+      {url
+        ? <img src={url} alt={name} className="h-full w-full object-cover" />
+        : <div className="h-full w-full bg-white/10" />
+      }
+    </div>
+  )
+}
+
 const BREAKDOWN_STYLES = {
   exact: 'text-green-400',
   result: 'text-amber-400',
@@ -40,14 +51,18 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 bg-black/60 sm:flex sm:items-center sm:justify-center sm:p-4"
       onClick={onClose}
     >
+      {/* Bottom sheet on mobile, centered modal on sm+ */}
       <div
-        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl bg-gray-800 p-5 shadow-xl"
+        className="fixed inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-2xl bg-gray-800 shadow-xl sm:relative sm:inset-auto sm:w-full sm:max-w-md sm:rounded-xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        {/* drag handle (mobile only) */}
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-gray-600 sm:hidden" />
+
+        <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
           <h2 className="text-lg font-bold text-white">Pronósticos</h2>
           <button
             onClick={onClose}
@@ -58,19 +73,21 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
           </button>
         </div>
 
-        <select
-          value={effectiveUserId}
-          onChange={e => setSelectedUserId(e.target.value)}
-          className="mb-4 w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-white focus:border-blue-400 focus:outline-none"
-        >
-          {members.map(m => (
-            <option key={m.userId} value={m.userId}>
-              {m.name}
-            </option>
-          ))}
-        </select>
+        <div className="shrink-0 px-5 pb-3">
+          <select
+            value={effectiveUserId}
+            onChange={e => setSelectedUserId(e.target.value)}
+            className="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-white focus:border-blue-400 focus:outline-none"
+          >
+            {members.map(m => (
+              <option key={m.userId} value={m.userId}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <div className="overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[env(safe-area-inset-bottom,1rem)]">
           {loading && <p className="py-8 text-center text-gray-500">Cargando…</p>}
           {error && <p className="py-8 text-center text-red-400">{error}</p>}
           {!loading && !error && matches.length === 0 && (
@@ -83,28 +100,26 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
               return (
                 <div
                   key={match.id}
-                  className="flex items-center justify-between border-t border-gray-700 py-2.5 first:border-t-0"
+                  className="flex items-center justify-between border-t border-gray-700 py-3 first:border-t-0"
                 >
-                  <p className="min-w-0 truncate text-sm text-white">
-                    {match.homeTeam}{' '}
-                    <span className="font-mono font-bold">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <MatchCrest url={match.homeTeamCrestUrl} name={match.homeTeam} />
+                    <span className="font-mono text-sm font-bold text-white">
                       {match.homeScore}–{match.awayScore}
-                    </span>{' '}
-                    {match.awayTeam}
-                  </p>
+                    </span>
+                    <MatchCrest url={match.awayTeamCrestUrl} name={match.awayTeam} />
+                  </div>
                   {pred ? (
                     <div className="ml-3 shrink-0 text-right">
                       <span className="font-mono text-sm text-gray-300">
                         {pred.predictedHome}–{pred.predictedAway}
                       </span>
-                      <span
-                        className={`ml-2 text-xs font-semibold ${BREAKDOWN_STYLES[pred.breakdown]}`}
-                      >
+                      <span className={`ml-2 text-xs font-semibold ${BREAKDOWN_STYLES[pred.breakdown]}`}>
                         {pred.points} pts
                       </span>
                     </div>
                   ) : (
-                    <span className="ml-3 py-1 shrink-0 text-xs text-gray-500">Sin pronóstico</span>
+                    <span className="ml-3 shrink-0 text-xs text-gray-500">Sin pronóstico</span>
                   )}
                 </div>
               )

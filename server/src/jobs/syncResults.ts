@@ -8,8 +8,8 @@ const COMPETITION = 'WC'
 interface FdoMatch {
   id: number
   status: string
-  homeTeam: { name: string }
-  awayTeam: { name: string }
+  homeTeam: { name: string; crest: string }
+  awayTeam: { name: string; crest: string }
   score: {
     fullTime: { home: number | null; away: number | null }
   }
@@ -63,7 +63,13 @@ export async function syncResults(): Promise<void> {
 
       const updated = await prisma.match.update({
         where: { id: dbMatch.id },
-        data: { homeScore, awayScore, status: 'FINISHED' },
+        data: {
+          homeScore,
+          awayScore,
+          status: 'FINISHED',
+          homeTeamCrestUrl: fdoMatch.homeTeam.crest,
+          awayTeamCrestUrl: fdoMatch.awayTeam.crest,
+        },
       })
       matchesSynced++
 

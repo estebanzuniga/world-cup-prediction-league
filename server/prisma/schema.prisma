@@ -53,14 +53,16 @@ enum MatchStatus {
 }
 
 model Match {
-  id          String      @id @default(cuid())
-  homeTeam    String
-  awayTeam    String
-  kickoffTime DateTime
-  homeScore   Int?
-  awayScore   Int?
-  status      MatchStatus @default(SCHEDULED)
-  externalId  String      @unique
+  id                String      @id @default(cuid())
+  homeTeam          String
+  awayTeam          String
+  homeTeamCrestUrl  String?
+  awayTeamCrestUrl  String?
+  kickoffTime       DateTime
+  homeScore         Int?
+  awayScore         Int?
+  status            MatchStatus @default(SCHEDULED)
+  externalId        String      @unique
 
   predictions Prediction[]
   points      PointsLedger[]

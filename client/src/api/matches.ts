@@ -13,6 +13,8 @@ export interface Match {
   id: string
   homeTeam: string
   awayTeam: string
+  homeTeamCrestUrl: string | null
+  awayTeamCrestUrl: string | null
   kickoffTime: string
   status: MatchStatus
   homeScore: number | null

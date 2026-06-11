@@ -18,6 +18,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           id: true,
           homeTeam: true,
           awayTeam: true,
+          homeTeamCrestUrl: true,
+          awayTeamCrestUrl: true,
           kickoffTime: true,
           status: true,
           homeScore: true,

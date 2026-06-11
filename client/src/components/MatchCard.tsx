@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Match, MyPrediction } from '../api/matches'
 import { submitPrediction } from '../api/predictions'
 import { isApiError } from '../api'
+import { toSpanish } from '../utils/countryNames'
 
 interface Props {
   match: Match
@@ -29,14 +30,17 @@ function PointsBadge({ breakdown, points }: { breakdown: NonNullable<MyPredictio
 }
 
 function ScoreInput({
+  id,
   value,
   onChange,
 }: {
+  id: string
   value: string
   onChange: (v: string) => void
 }) {
   return (
     <input
+      id={id}
       type="text"
       inputMode="numeric"
       autoComplete="off"
@@ -45,8 +49,23 @@ function ScoreInput({
       value={value}
       onFocus={e => e.target.select()}
       onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 2))}
-      className="w-11 rounded border border-gray-600 bg-gray-700 px-1 py-1 text-center text-lg font-mono text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+      className="w-12 rounded border border-gray-600 bg-gray-700 px-1 py-2 text-center text-lg font-mono text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
     />
+  )
+}
+
+function TeamCrest({ url, name }: { url: string | null; name: string }) {
+  if (url) {
+    return (
+      <div className="h-8 w-8 overflow-hidden rounded-full ring-1 ring-white/20">
+        <img src={url} alt={name} className="h-full w-full object-cover" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
+      <span className="text-base">⚽</span>
+    </div>
   )
 }
 
@@ -101,11 +120,14 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
       <span className="text-xs text-gray-400 mb-2">{formatKickoff(match.kickoffTime)}</span>
 
       {/* Match row */}
-      <div className="relative flex w-full items-center gap-3">
+      <div className="relative flex w-full items-end gap-3">
         {/* Home team */}
-        <span className="min-w-0 flex-1 truncate text-right text-sm font-medium text-white">
-          {match.homeTeam}
-        </span>
+        <div className="flex min-w-0 flex-1 flex-col items-end gap-1">
+          <TeamCrest url={match.homeTeamCrestUrl} name={match.homeTeam} />
+          <span className="max-w-full truncate text-right text-xs font-medium text-white">
+            {toSpanish(match.homeTeam)}
+          </span>
+        </div>
 
         {/* Center: score or form */}
         <div className="flex shrink-0 items-center gap-1.5">
@@ -127,17 +149,20 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
               onSubmit={handleSubmit}
               className="flex items-center gap-1.5"
             >
-              <ScoreInput value={home} onChange={setHome} />
+              <ScoreInput id={`home-${match.id}`} value={home} onChange={setHome} />
               <span className="text-gray-400">–</span>
-              <ScoreInput value={away} onChange={setAway} />
+              <ScoreInput id={`away-${match.id}`} value={away} onChange={setAway} />
             </form>
           )}
         </div>
 
         {/* Away team */}
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">
-          {match.awayTeam}
-        </span>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <TeamCrest url={match.awayTeamCrestUrl} name={match.awayTeam} />
+          <span className="max-w-full truncate text-xs font-medium text-white">
+            {toSpanish(match.awayTeam)}
+          </span>
+        </div>
       </div>
 
       {/* Sub-rows for upcoming matches: feedback, then kickoff time, then submit */}
@@ -158,7 +183,7 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
             type="submit"
             form={`predict-${match.id}`}
             disabled={saving || home === '' || away === ''}
-            className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
           >
             {saving ? '…' : hasExisting ? 'Actualizar' : 'Pronosticar'}
           </button>

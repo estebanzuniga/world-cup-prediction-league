@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/ezuniga/Developer/world-cup-prediction-league/.claude/hooks/restrict-env.py"
+          }
+        ]
+      }
+    ]
+  }
+}

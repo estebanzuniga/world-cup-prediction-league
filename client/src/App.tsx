@@ -28,7 +28,7 @@ function RequireAuth() {
 function AppLayout() {
   return (
     <LeagueProvider>
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-gray-900 pb-24">
         <Nav />
         <Outlet />
       </div>

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently -n server,client -c cyan,green \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "build": "npm install && npm run build --workspace=server && npm run build --workspace=client",
-    "start": "npx prisma migrate deploy --schema=server/prisma/schema.prisma && npm run start --workspace=server",
+    "start": "npx prisma@5 migrate deploy --schema=server/prisma/schema.prisma && npm run start --workspace=server",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc -p client/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit"
   },

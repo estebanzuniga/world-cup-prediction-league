@@ -11,6 +11,7 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const statusCode = err.statusCode ?? 500
+  if (statusCode === 500) console.error(err)
   const message = statusCode === 500 ? 'Internal server error' : err.message
   res.status(statusCode).json({ error: message })
 }

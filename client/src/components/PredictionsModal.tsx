@@ -91,12 +91,16 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
           {loading && <p className="py-8 text-center text-gray-500">Cargando…</p>}
           {error && <p className="py-8 text-center text-red-400">{error}</p>}
           {!loading && !error && matches.length === 0 && (
-            <p className="py-8 text-center text-gray-500">Aún no hay partidos finalizados.</p>
+            <p className="py-8 text-center text-gray-500">Aún no hay partidos en curso o finalizados.</p>
           )}
           {!loading &&
             !error &&
             matches.map(match => {
               const pred = match.predictions.find(p => p.userId === effectiveUserId)
+              const isLive = match.status === 'LIVE' || (match.status !== 'FINISHED' && new Date(match.kickoffTime) <= new Date())
+              const scoreDisplay = match.homeScore !== null && match.awayScore !== null
+                ? `${match.homeScore}–${match.awayScore}`
+                : '?–?'
               return (
                 <div
                   key={match.id}
@@ -104,19 +108,24 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <MatchCrest url={match.homeTeamCrestUrl} name={match.homeTeam} />
-                    <span className="font-mono text-sm font-bold text-white">
-                      {match.homeScore}–{match.awayScore}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="font-mono text-sm font-bold text-white">{scoreDisplay}</span>
+                    </div>
                     <MatchCrest url={match.awayTeamCrestUrl} name={match.awayTeam} />
+                    {isLive && (
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
+                    )}
                   </div>
                   {pred ? (
                     <div className="ml-3 shrink-0 text-right">
                       <span className="font-mono text-sm text-gray-300">
                         {pred.predictedHome}–{pred.predictedAway}
                       </span>
-                      <span className={`ml-2 text-xs font-semibold ${BREAKDOWN_STYLES[pred.breakdown]}`}>
-                        {pred.points} pts
-                      </span>
+                      {!isLive && pred.breakdown !== null && (
+                        <span className={`ml-2 text-xs font-semibold ${BREAKDOWN_STYLES[pred.breakdown]}`}>
+                          {pred.points} pts
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <span className="ml-3 shrink-0 text-xs text-gray-500">Sin pronóstico</span>

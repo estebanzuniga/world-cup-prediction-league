@@ -218,10 +218,16 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
     if (!isMember) { res.status(403).json({ error: 'Forbidden' }); return }
 
     const memberIds = league.members.map((m) => m.userId)
+    const now = new Date()
     const matches = await prisma.match.findMany({
-      where: { status: 'FINISHED', homeScore: { not: null }, awayScore: { not: null } },
+      where: {
+        OR: [
+          { status: { in: ['FINISHED', 'LIVE'] } },
+          { kickoffTime: { lt: now } },
+        ],
+      },
       orderBy: { kickoffTime: 'desc' },
-      select: { id: true, homeTeam: true, awayTeam: true, homeTeamCrestUrl: true, awayTeamCrestUrl: true, kickoffTime: true, homeScore: true, awayScore: true },
+      select: { id: true, homeTeam: true, awayTeam: true, homeTeamCrestUrl: true, awayTeamCrestUrl: true, kickoffTime: true, homeScore: true, awayScore: true, status: true },
     })
     const predictions = await prisma.prediction.findMany({
       where: { matchId: { in: matches.map((m) => m.id) }, userId: { in: memberIds } },
@@ -236,11 +242,14 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
     const result = matches.map((match) => ({
       ...match,
       predictions: (byMatch.get(match.id) ?? []).map((p) => {
-        const scored = calculatePoints(
-          { predictedHome: p.predictedHome, predictedAway: p.predictedAway },
-          { homeScore: match.homeScore!, awayScore: match.awayScore! }
-        )
-        return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: scored.points, breakdown: scored.breakdown }
+        if (match.status === 'FINISHED' && match.homeScore !== null && match.awayScore !== null) {
+          const scored = calculatePoints(
+            { predictedHome: p.predictedHome, predictedAway: p.predictedAway },
+            { homeScore: match.homeScore, awayScore: match.awayScore }
+          )
+          return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: scored.points, breakdown: scored.breakdown }
+        }
+        return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: null, breakdown: null }
       }),
     }))
     res.json({ matches: result })

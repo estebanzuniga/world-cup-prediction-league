@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import PWAInstall from '@khmyznikov/pwa-install/react-legacy'
 import { getToken } from './api'
 import { LeagueProvider, useLeague } from './contexts/LeagueContext'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import Nav from './components/Nav'
+import { ChevronDownIcon } from './components/icons'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import MatchesPage from './pages/MatchesPage'
@@ -31,6 +32,28 @@ function RequireAuth() {
   return <Outlet />
 }
 
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 200)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  if (!visible) return null
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="fixed bottom-20 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 shadow-lg transition-opacity hover:bg-gray-600 active:scale-95"
+      aria-label="Volver arriba"
+    >
+      <ChevronDownIcon className="h-5 w-5 rotate-180 text-white" />
+    </button>
+  )
+}
+
 function AppInner() {
   const { refreshLeagues, loading } = useLeague()
   const { isRefreshing, setIsRefreshing } = usePullToRefresh(refreshLeagues)
@@ -48,6 +71,7 @@ function AppInner() {
       )}
       <Outlet />
       <Nav />
+      <ScrollToTopButton />
     </>
   )
 }

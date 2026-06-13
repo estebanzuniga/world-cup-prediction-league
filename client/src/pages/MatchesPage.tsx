@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { removeToken, logout } from '../api'
 import MatchCard from '../components/MatchCard'
 import { useLeague } from '../contexts/LeagueContext'
+import { ChevronDownIcon } from '../components/icons'
 
 function toDateKey(iso: string) {
   // Key by the user's local calendar day, not the UTC one
@@ -54,6 +55,45 @@ function MatchdaySection({
         ))}
       </div>
     </section>
+  )
+}
+
+function PastMatchesSection({
+  groups,
+  onUnauthorized,
+}: {
+  groups: [string, string, Match[]][]
+  onUnauthorized: () => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="rounded-xl border border-gray-700/60 bg-gray-800/40">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-700/30 rounded-xl"
+      >
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-700">
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-300 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          />
+        </div>
+        <span className="text-sm font-semibold text-gray-300">Resultados anteriores</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-700/60 px-4 pb-4 pt-4 space-y-6">
+          {groups.map(([key, label, dayMatches]) => (
+            <MatchdaySection
+              key={key}
+              label={label}
+              matches={dayMatches}
+              onUnauthorized={onUnauthorized}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -129,28 +169,19 @@ export default function MatchesPage() {
       )}
 
       {!error && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          {pastGroups.length > 0 && (
+            <PastMatchesSection
+              groups={pastGroups}
+              onUnauthorized={handleUnauthorized}
+            />
+          )}
+
           {upcomingGroups.length > 0 && (
             <div>
               <h1 className="mb-4 text-lg font-bold text-white">Próximos partidos</h1>
               <div className="space-y-6">
                 {upcomingGroups.map(([key, label, dayMatches]) => (
-                  <MatchdaySection
-                    key={key}
-                    label={label}
-                    matches={dayMatches}
-                    onUnauthorized={handleUnauthorized}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {pastGroups.length > 0 && (
-            <div>
-              <h1 className="mb-4 text-lg font-bold text-white">Resultados</h1>
-              <div className="space-y-6">
-                {pastGroups.map(([key, label, dayMatches]) => (
                   <MatchdaySection
                     key={key}
                     label={label}

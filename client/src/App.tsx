@@ -46,7 +46,7 @@ function ScrollToTopButton() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className="fixed bottom-20 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 shadow-lg transition-opacity hover:bg-gray-600 active:scale-95"
+      className="fixed bottom-28 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 shadow-lg transition-opacity hover:bg-gray-600 active:scale-95"
       aria-label="Volver arriba"
     >
       <ChevronDownIcon className="h-5 w-5 rotate-180 text-white" />

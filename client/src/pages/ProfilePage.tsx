@@ -60,7 +60,7 @@ export default function ProfilePage() {
   const activeColor = color ?? defaultColor(user.name)
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-10">
+    <main className="mx-auto max-w-sm px-4 py-6">
       <h1 className="mb-8 text-lg font-bold text-white">Mi perfil</h1>
 
       {/* Avatar preview */}

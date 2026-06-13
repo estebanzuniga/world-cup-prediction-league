@@ -85,7 +85,7 @@ export default function InvitePage() {
   const inviteUrl = token ? `${window.location.origin}/join/${token.token}` : null
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-10">
+    <main className="mx-auto max-w-sm px-4 py-6">
       <h1 className="mb-1 text-lg font-bold text-white">Invitar amigos</h1>
       <p className="mb-6 text-sm text-gray-400">
         Genera un enlace de un solo uso y compártelo. El enlace desaparecerá de esta pantalla en {VISIBLE_SECONDS} segundos.

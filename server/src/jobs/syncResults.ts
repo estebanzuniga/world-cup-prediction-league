@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { prisma } from '../lib/prisma'
 import { calculatePoints } from '../services/scoring'
+import { sendPush } from '../lib/webPush'
 
 const API_BASE = 'https://api.football-data.org/v4'
 const COMPETITION = 'WC'
@@ -87,6 +88,8 @@ export async function syncResults(): Promise<void> {
         include: { user: { include: { memberships: { select: { leagueId: true } } } } },
       })
 
+      const staleSubIds: string[] = []
+
       for (const prediction of predictions) {
         const scored = calculatePoints(
           { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
@@ -119,6 +122,24 @@ export async function syncResults(): Promise<void> {
           })
           ledgerRowsWritten++
         }
+
+        // Notify the user of their result
+        const pointsLabel =
+          scored.points === 3 ? '+3 puntos' : scored.points === 1 ? '+1 punto' : '+0 puntos'
+        const emoji = scored.points === 3 ? '🎯' : scored.points === 1 ? '✅' : '❌'
+        const subs = await prisma.pushSubscription.findMany({ where: { userId: prediction.userId } })
+        for (const sub of subs) {
+          const result = await sendPush(sub, {
+            title: 'Goalcaster · Resultado',
+            body: `${updated.homeTeam} ${homeScore}–${awayScore} ${updated.awayTeam} · ${pointsLabel} ${emoji}`,
+            url: '/',
+          })
+          if (result === 'gone') staleSubIds.push(sub.id)
+        }
+      }
+
+      if (staleSubIds.length > 0) {
+        await prisma.pushSubscription.deleteMany({ where: { id: { in: staleSubIds } } })
       }
     }
 

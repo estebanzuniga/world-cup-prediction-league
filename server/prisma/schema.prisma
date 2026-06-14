@@ -16,12 +16,13 @@ model User {
   avatarColor  String?
   createdAt    DateTime @default(now())
 
-  createdLeagues League[]       @relation("LeagueCreator")
-  memberships    LeagueMember[]
-  predictions    Prediction[]
-  points         PointsLedger[]
-  createdTokens  InviteToken[]  @relation("InviteTokenCreator")
-  usedTokens     InviteToken[]  @relation("InviteTokenUsed")
+  createdLeagues     League[]           @relation("LeagueCreator")
+  memberships        LeagueMember[]
+  predictions        Prediction[]
+  points             PointsLedger[]
+  createdTokens      InviteToken[]      @relation("InviteTokenCreator")
+  usedTokens         InviteToken[]      @relation("InviteTokenUsed")
+  pushSubscriptions  PushSubscription[]
 }
 
 model League {
@@ -117,5 +118,18 @@ model PointsLedger {
 
   @@unique([userId, matchId, leagueId])
   @@index([leagueId])
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }

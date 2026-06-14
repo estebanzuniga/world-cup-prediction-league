@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isApiError, logout, removeToken } from '../api'
 import { getMe, updateAvatarColor, type UserProfile } from '../api/users'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const AVATAR_COLORS = [
   { value: 'bg-blue-600',   label: 'Azul' },
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const [color, setColor] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const push = usePushNotifications()
 
   useEffect(() => {
     getMe().then(result => {
@@ -97,6 +99,38 @@ export default function ProfilePage() {
         {saving && <p className="mt-3 text-xs text-gray-500">Guardando…</p>}
         {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
       </div>
+
+      {/* Push notifications */}
+      {push.supported && push.permission !== 'denied' && (
+        <div className="mb-4 rounded-xl bg-gray-800 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-300">Notificaciones</p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {push.subscribed
+                  ? 'Recibirás alertas de resultados y partidos próximos'
+                  : 'Actívalas para no perderte ningún partido'}
+              </p>
+            </div>
+            <button
+              onClick={push.subscribed ? push.unsubscribe : push.subscribe}
+              disabled={push.loading}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                push.subscribed ? 'bg-emerald-500' : 'bg-gray-600'
+              }`}
+              role="switch"
+              aria-checked={push.subscribed}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                  push.subscribed ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          {push.error && <p className="mt-2 text-xs text-red-400">{push.error}</p>}
+        </div>
+      )}
 
       {/* Logout */}
       <button

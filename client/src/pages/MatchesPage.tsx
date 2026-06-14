@@ -71,10 +71,10 @@ function PastMatchesSection({
     <div className="rounded-xl border border-gray-700/60 bg-gray-800/40">
       <button
         onClick={() => setOpen(v => !v)}
-        className={`flex justify-between w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-700/30 rounded-xl ${open ? 'rounded-b-none' : ''}`}
+        className={`flex justify-between w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-gray-700/30 rounded-xl ${open ? 'rounded-b-none' : ''}`}
       >
         <span className="text-sm font-semibold text-gray-300">Resultados anteriores</span>
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-700">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-700">
           <ChevronDownIcon
             className={`h-3 w-3 text-gray-300 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           />

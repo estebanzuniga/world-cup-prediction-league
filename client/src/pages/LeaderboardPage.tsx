@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLeague } from '../contexts/LeagueContext'
 import LeagueSelect from '../components/LeagueSelect'
 import PredictionsModal from '../components/PredictionsModal'
+import { InformationCircleIcon } from '../components/icons'
 import { getLeaderboard, type LeaderboardEntry } from '../api/leagues'
 import { isApiError } from '../api'
 
@@ -54,6 +55,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPredictions, setShowPredictions] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     if (leagues.length > 0 && !league) setLeague(leagues[0])
@@ -97,24 +99,36 @@ export default function LeaderboardPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          {leagues.length > 1 ? (
-            <LeagueSelect className="w-full text-lg font-bold" leagues={leagues} value={league} onChange={setLeague} />
-          ) : (
-            <h1 className="truncate text-lg font-bold text-white">{league.name}</h1>
-          )}
-        </div>
-        <button
-          onClick={() => setShowPredictions(true)}
-          className="shrink-0 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-600"
-        >
-          Ver pronósticos
-        </button>
+      {/* League title */}
+      <div className="mb-3 w-full rounded-lg bg-gray-800/40 px-3 py-2 text-center text-sm text-gray-400">
+        {leagues.length > 1 ? (
+          <LeagueSelect className="w-full text-lg font-bold" leagues={leagues} value={league} onChange={setLeague} />
+        ) : (
+          <h1 className="truncate text-lg font-bold text-white">{league.name}</h1>
+        )}
       </div>
-      <p className="mb-6 text-sm text-gray-400">
-        {entries.length} miembro{entries.length !== 1 ? 's' : ''}
-      </p>
+
+      {/* Sub-header: member count + actions */}
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          {entries.length} miembro{entries.length !== 1 ? 's' : ''}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPredictions(true)}
+            className="shrink-0 rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-600"
+          >
+            Ver pronósticos
+          </button>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-gray-700 p-1.5 text-sm font-medium text-white transition hover:bg-gray-600"
+            aria-label="Cómo se calculan los puntos"
+          >
+            <InformationCircleIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-xl bg-gray-800 shadow">
         {entries.length === 0 ? (
@@ -158,6 +172,55 @@ export default function LeaderboardPage() {
           members={entries.map(e => ({ userId: e.userId, name: e.name }))}
           onClose={() => setShowPredictions(false)}
         />
+      )}
+
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 sm:flex sm:items-center sm:justify-center sm:p-4"
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="fixed inset-x-0 bottom-0 rounded-t-2xl bg-gray-800 shadow-xl sm:relative sm:inset-auto sm:w-full sm:max-w-sm sm:rounded-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-gray-600 sm:hidden" />
+
+            <div className="flex items-center justify-between px-5 pb-3 pt-4">
+              <h2 className="text-lg font-bold text-white">Sistema de puntuación</h2>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="text-gray-400 transition hover:text-white"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 px-5 pb-8 pt-1">
+              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
+                <span className="text-2xl font-bold text-green-400">3</span>
+                <div>
+                  <p className="font-medium text-white">Marcador exacto</p>
+                  <p className="text-sm text-gray-400">Predijiste el resultado exacto del partido</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
+                <span className="text-2xl font-bold text-amber-400">1</span>
+                <div>
+                  <p className="font-medium text-white">Resultado correcto</p>
+                  <p className="text-sm text-gray-400">Acertaste victoria, empate o derrota pero no el marcador</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
+                <span className="text-2xl font-bold text-gray-500">0</span>
+                <div>
+                  <p className="font-medium text-white">Resultado incorrecto</p>
+                  <p className="text-sm text-gray-400">El resultado no coincide con tu pronóstico</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )

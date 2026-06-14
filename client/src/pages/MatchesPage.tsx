@@ -137,8 +137,6 @@ export default function MatchesPage() {
     [...past].sort((a, b) => b.kickoffTime.localeCompare(a.kickoffTime)),
   )
 
-  const liveCount = matches.filter(m => m.status === 'LIVE').length
-
   if (loading) {
     return <div className="py-20 text-center text-gray-500">Cargando…</div>
   }
@@ -157,13 +155,6 @@ export default function MatchesPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      {liveCount > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-900/30 px-3 py-2">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />
-          <span className="text-sm font-medium text-green-400">{liveCount} partido{liveCount > 1 ? 's' : ''} en vivo</span>
-        </div>
-      )}
-
       {error && (
         <div className="rounded-lg bg-red-900/30 px-4 py-3 text-sm text-red-400">{error}</div>
       )}

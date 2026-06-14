@@ -92,10 +92,11 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const isUpcoming = match.status === 'SCHEDULED'
-  const isLive = match.status === 'LIVE' || (match.status !== 'FINISHED' && new Date(match.kickoffTime) <= new Date())
-  const isFinished = match.status === 'FINISHED'
   const isLocked = new Date() >= new Date(match.kickoffTime)
+  const startedMatch = match.status !== 'FINISHED' && isLocked
+  const isUpcoming = match.status === 'SCHEDULED' && !startedMatch
+  const isLive = match.status === 'LIVE'
+  const isFinished = match.status === 'FINISHED'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -121,15 +122,15 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
 
   return (
     <div className="flex flex-col items-center rounded-lg bg-gray-800 px-4 py-3 shadow-sm">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-2">
         <span className="text-xs text-gray-400">{formatKickoff(match.kickoffTime)}</span>
-        {isLive && (
+        {startedMatch && (
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />
         )}
       </div>
 
       {/* Match row */}
-      <div className="relative flex w-full items-end gap-3">
+      <div className="relative flex w-full items-center gap-3">
         {/* Home team */}
         <div className="flex min-w-0 flex-1 flex-col items-end gap-1">
           <TeamCrest url={match.homeTeamCrestUrl} name={match.homeTeam} />
@@ -140,9 +141,9 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
 
         {/* Center: score or form */}
         <div className="flex shrink-0 items-center gap-1.5">
-          {isFinished && (
+          {(isFinished || isLive || startedMatch) && (
             <span className="font-mono text-xl font-bold text-white">
-              {match.homeScore} – {match.awayScore}
+              {match.homeScore ?? 0} – {match.awayScore ?? 0}
             </span>
           )}
 
@@ -194,22 +195,18 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
       )}
 
       {/* Sub-row: user prediction for finished matches, feedback for upcoming */}
-      {isFinished && prediction && (
-        <p className="mt-1.5 text-right text-xs text-gray-400">
+      { (isFinished || isLive || startedMatch) && prediction && (
+        <p className="py-1.5 text-xs text-gray-400">
           Tu pronóstico: {prediction.predictedHome}–{prediction.predictedAway}
         </p>
       )}
+      { (isFinished || isLive || startedMatch) && !prediction && (
+        <span className="py-1.5 text-xs text-gray-500">Sin pronóstico</span>
+      )}
 
       {/* Status row: live/finished badges, then user prediction for finished matches, then feedback for upcoming */}
-      {(isFinished) && (
-        <div className="py-2">
-          {isFinished && prediction && (
-            <PointsBadge breakdown={prediction.breakdown ?? 'none'} points={prediction.points ?? 0} />
-          )}
-          {isFinished && !prediction && (
-            <span className="text-xs text-gray-500">Sin pronóstico</span>
-          )}
-        </div>
+      { isFinished && prediction && (
+        <PointsBadge breakdown={prediction.breakdown ?? 'none'} points={prediction.points ?? 0} />
       )}
 
     </div>

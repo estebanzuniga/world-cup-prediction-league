@@ -15,9 +15,9 @@ interface FdoMatch {
   }
 }
 
-async function fetchFinishedMatches(): Promise<FdoMatch[]> {
+async function fetchMatches(status: string): Promise<FdoMatch[]> {
   const res = await fetch(
-    `${API_BASE}/competitions/${COMPETITION}/matches?status=FINISHED`,
+    `${API_BASE}/competitions/${COMPETITION}/matches?status=${status}`,
     { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_API_KEY! } }
   )
   if (!res.ok) {
@@ -40,7 +40,58 @@ export async function syncResults(): Promise<void> {
   let ledgerRowsWritten = 0
 
   try {
-    const fdoMatches = await fetchFinishedMatches()
+    // --- Live matches (IN_PLAY / PAUSED from API → LIVE in DB) ---
+    const liveMatches = await fetchMatches('IN_PLAY,PAUSED')
+    console.log(`[syncResults] API returned ${liveMatches.length} live match(es)`)
+
+    const liveApiIds: string[] = []
+
+    for (const fdoMatch of liveMatches) {
+      const { home: homeScore, away: awayScore } = fdoMatch.score.fullTime
+      const apiExternalId = String(fdoMatch.id)
+      liveApiIds.push(apiExternalId)
+
+      const dbMatch =
+        (await prisma.match.findUnique({ where: { externalId: apiExternalId } })) ??
+        (await prisma.match.findFirst({
+          where: { homeTeam: fdoMatch.homeTeam.name, awayTeam: fdoMatch.awayTeam.name },
+        }))
+
+      if (!dbMatch) {
+        console.warn(`[syncResults] No DB match found for live: ${fdoMatch.homeTeam.name} vs ${fdoMatch.awayTeam.name}`)
+        continue
+      }
+
+      if (dbMatch.status === 'FINISHED') continue
+
+      await prisma.match.update({
+        where: { id: dbMatch.id },
+        data: {
+          homeScore: homeScore ?? dbMatch.homeScore,
+          awayScore: awayScore ?? dbMatch.awayScore,
+          status: 'LIVE',
+          homeTeamCrestUrl: fdoMatch.homeTeam.crest,
+          awayTeamCrestUrl: fdoMatch.awayTeam.crest,
+        },
+      })
+      console.log(`[syncResults] Live: ${fdoMatch.homeTeam.name} ${homeScore ?? '?'}–${awayScore ?? '?'} ${fdoMatch.awayTeam.name}`)
+    }
+
+    // Reset any DB match that was LIVE but is no longer live or finished
+    if (liveApiIds.length > 0) {
+      await prisma.match.updateMany({
+        where: { status: 'LIVE', externalId: { notIn: liveApiIds } },
+        data: { status: 'SCHEDULED' },
+      })
+    } else {
+      await prisma.match.updateMany({
+        where: { status: 'LIVE' },
+        data: { status: 'SCHEDULED' },
+      })
+    }
+
+    // --- Finished matches ---
+    const fdoMatches = await fetchMatches('FINISHED')
     console.log(`[syncResults] API returned ${fdoMatches.length} finished match(es)`)
 
     for (const fdoMatch of fdoMatches) {
@@ -138,6 +189,6 @@ export async function syncResults(): Promise<void> {
 // The job is a no-op outside the active window because the API will return no
 // newly finished matches, so this guard is belt-and-suspenders rather than critical.
 export function registerSyncJob(): void {
-  cron.schedule('*/5 * * * *', () => void syncResults(), { timezone: 'UTC' })
-  console.log('[syncResults] Job registered — */5 * * * * UTC')
+  cron.schedule('*/1 * * * *', () => void syncResults(), { timezone: 'UTC' })
+  console.log('[syncResults] Job registered — */1 * * * * UTC')
 }

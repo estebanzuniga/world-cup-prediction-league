@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import { prisma } from '../lib/prisma'
 import { calculatePoints } from '../services/scoring'
 import { sendPush } from '../lib/webPush'
+import { toSpanish } from '../utils/countryNames'
 
 const API_BASE = 'https://api.football-data.org/v4'
 const COMPETITION = 'WC'
@@ -130,8 +131,8 @@ export async function syncResults(): Promise<void> {
         const subs = await prisma.pushSubscription.findMany({ where: { userId: prediction.userId } })
         for (const sub of subs) {
           const result = await sendPush(sub, {
-            title: 'Goalcaster · Resultado',
-            body: `${updated.homeTeam} ${homeScore}–${awayScore} ${updated.awayTeam} · ${pointsLabel} ${emoji}`,
+            title: `${toSpanish(updated.homeTeam)} vs ${toSpanish(updated.awayTeam)} · Resultado`,
+            body: `El partido terminó ${homeScore}–${awayScore} · ${pointsLabel} ${emoji}`,
             url: '/',
           })
           if (result === 'gone') staleSubIds.push(sub.id)

@@ -30,8 +30,8 @@ export async function kickoffReminder(): Promise<void> {
     const staleIds: string[] = []
     for (const sub of subscriptions) {
       const result = await sendPush(sub, {
-        title: 'Goalcaster',
-        body: `${toSpanish(match.homeTeam)} vs ${toSpanish(match.awayTeam)} comienza en 10 minutos`,
+        title: `${toSpanish(match.homeTeam)} vs ${toSpanish(match.awayTeam)}`,
+        body: 'Comienza en 10 minutos',
         url: '/',
       })
       if (result === 'gone') staleIds.push(sub.id)

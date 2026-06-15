@@ -79,7 +79,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Color picker */}
-      <div className="mb-8 rounded-xl bg-gray-800 p-6">
+      <div className="mb-4 rounded-xl bg-gray-800 p-6">
         <p className="mb-4 text-sm font-semibold text-gray-300">Color del avatar</p>
         <div className="flex gap-3">
           {AVATAR_COLORS.map(({ value, label }) => (
@@ -108,7 +108,7 @@ export default function ProfilePage() {
               <p className="text-sm font-semibold text-gray-300">Notificaciones</p>
               <p className="mt-0.5 text-xs text-gray-500">
                 {push.subscribed
-                  ? 'Recibirás alertas de resultados y partidos próximos'
+                  ? 'Recibirás alertas antes de que comiencen los partidos'
                   : 'Actívalas para no perderte ningún partido'}
               </p>
             </div>

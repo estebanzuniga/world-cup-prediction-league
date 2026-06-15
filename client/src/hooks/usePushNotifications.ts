@@ -57,6 +57,7 @@ export function usePushNotifications() {
         keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
       })
       if (isApiError(result)) {
+        await sub.unsubscribe()
         setError(result.error)
       } else {
         setSubscribed(true)

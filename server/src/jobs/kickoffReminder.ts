@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { prisma } from '../lib/prisma'
 import { sendPush } from '../lib/webPush'
+import { toSpanish } from '../utils/countryNames'
 
 // In-memory guard: tracks match IDs we've already notified about so we don't
 // send duplicate reminders across cron ticks that overlap the kickoff window.
@@ -8,13 +9,13 @@ const remindedMatchIds = new Set<string>()
 
 export async function kickoffReminder(): Promise<void> {
   const now = new Date()
-  const windowStart = new Date(now.getTime() + 25 * 60 * 1000)
-  const windowEnd = new Date(now.getTime() + 35 * 60 * 1000)
+  const windowStart = new Date(now.getTime() + 10 * 60 * 1000 - 30 * 1000) // 9m30s from now
+  const windowEnd = new Date(now.getTime() + 10 * 60 * 1000 + 30 * 1000) // 10m30s from now
 
   const upcoming = await prisma.match.findMany({
     where: {
       status: 'SCHEDULED',
-      kickoffTime: { gte: windowStart, lte: windowEnd },
+      kickoffTime: { gt: windowStart, lt: windowEnd },
     },
   })
 
@@ -24,21 +25,13 @@ export async function kickoffReminder(): Promise<void> {
     if (remindedMatchIds.has(match.id)) continue
     remindedMatchIds.add(match.id)
 
-    const alreadyPredicted = await prisma.prediction.findMany({
-      where: { matchId: match.id },
-      select: { userId: true },
-    })
-    const predictedUserIds = new Set(alreadyPredicted.map(p => p.userId))
-
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: { userId: { notIn: [...predictedUserIds] } },
-    })
+    const subscriptions = await prisma.pushSubscription.findMany()
 
     const staleIds: string[] = []
     for (const sub of subscriptions) {
       const result = await sendPush(sub, {
-        title: 'Goalcaster · Predicción pendiente',
-        body: `${match.homeTeam} vs ${match.awayTeam} arranca en 30 minutos`,
+        title: 'Goalcaster',
+        body: `${toSpanish(match.homeTeam)} vs ${toSpanish(match.awayTeam)} comienza en 10 minutos`,
         url: '/',
       })
       if (result === 'gone') staleIds.push(sub.id)

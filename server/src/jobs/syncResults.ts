@@ -159,6 +159,6 @@ export async function syncResults(): Promise<void> {
 // The job is a no-op outside the active window because the API will return no
 // newly finished matches, so this guard is belt-and-suspenders rather than critical.
 export function registerSyncJob(): void {
-  cron.schedule('*/5 * * * *', () => void syncResults(), { timezone: 'UTC' })
-  console.log('[syncResults] Job registered — */5 * * * * UTC')
+  cron.schedule('*/1 * * * *', () => void syncResults(), { timezone: 'UTC' })
+  console.log('[syncResults] Job registered — */1 * * * * UTC')
 }

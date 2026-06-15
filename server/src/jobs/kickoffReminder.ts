@@ -55,6 +55,6 @@ export async function kickoffReminder(): Promise<void> {
 }
 
 export function registerKickoffReminderJob(): void {
-  cron.schedule('*/5 * * * *', () => void kickoffReminder(), { timezone: 'UTC' })
-  console.log('[kickoffReminder] Job registered — */5 * * * * UTC')
+  cron.schedule('*/10 * * * *', () => void kickoffReminder(), { timezone: 'UTC' })
+  console.log('[kickoffReminder] Job registered — */10 * * * * UTC')
 }

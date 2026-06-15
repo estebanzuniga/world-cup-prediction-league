@@ -19,10 +19,17 @@ export async function kickoffReminder(): Promise<void> {
     },
   })
 
-  if (upcoming.length === 0) return
+  if (upcoming.length === 0) {
+    console.log(`[kickoffReminder] No matches kicking off between ${windowStart.toISOString()} and ${windowEnd.toISOString()}`)
+    return
+  }
 
   for (const match of upcoming) {
-    if (remindedMatchIds.has(match.id)) continue
+    if (remindedMatchIds.has(match.id)) {
+      console.log(`[kickoffReminder] Already sent reminder for match ${match.id} (${match.homeTeam} vs ${match.awayTeam}) — skipping`)
+      continue
+    }
+
     remindedMatchIds.add(match.id)
 
     const subscriptions = await prisma.pushSubscription.findMany()

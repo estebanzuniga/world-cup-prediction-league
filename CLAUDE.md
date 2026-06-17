@@ -79,6 +79,8 @@ cd server && npx vitest run src/__tests__/scoring.test.ts
 | `FOOTBALL_DATA_API_KEY` | football-data.org API key (sync is skipped if blank) |
 | `PORT` | Server port (default 3000) |
 | `CLIENT_URL` | CORS origin for the Vite dev server (default `http://localhost:5173`) |
+| `TELEGRAM_BOT_TOKEN` | Token from @BotFather — enables the Telegram bot (skipped if unset) |
+| `TELEGRAM_ADMIN_CHAT_ID` | Your Telegram chat ID from @userinfobot — only this ID can run bot commands |
 
 The test setup (`server/src/__tests__/setup.ts`) loads the root `.env` and injects fallback JWT secrets so tests run without a real `.env`.
 

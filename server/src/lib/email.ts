@@ -1,29 +1,15 @@
-import nodemailer from 'nodemailer'
-import type SMTPTransport from 'nodemailer/lib/smtp-transport'
+import { Resend } from 'resend'
 
-function getTransporter() {
-  const host = process.env.SMTP_HOST
-  if (!host) throw new Error('SMTP_HOST is not configured. Add SMTP_* variables to your .env file.')
-
-  const options = {
-    host,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    family: 4, // force IPv4 — some hosts can't reach SMTP over IPv6
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  } as SMTPTransport.Options
-
-  return nodemailer.createTransport(options)
+function getClient() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) throw new Error('RESEND_API_KEY is not configured.')
+  return new Resend(apiKey)
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER
-  const transporter = getTransporter()
+  const from = process.env.SMTP_FROM ?? 'Goalcaster <onboarding@resend.dev>'
 
-  await transporter.sendMail({
+  const { error } = await getClient().emails.send({
     from,
     to,
     subject: 'Restablece tu contraseña — Goalcaster',
@@ -42,4 +28,6 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       </div>
     `,
   })
+
+  if (error) throw new Error(`Failed to send email: ${error.message}`)
 }

@@ -1,18 +1,22 @@
 import nodemailer from 'nodemailer'
+import type SMTPTransport from 'nodemailer/lib/smtp-transport'
 
 function getTransporter() {
   const host = process.env.SMTP_HOST
   if (!host) throw new Error('SMTP_HOST is not configured. Add SMTP_* variables to your .env file.')
 
-  return nodemailer.createTransport({
+  const options = {
     host,
     port: Number(process.env.SMTP_PORT ?? 587),
     secure: process.env.SMTP_SECURE === 'true',
+    family: 4, // force IPv4 — some hosts can't reach SMTP over IPv6
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-  })
+  } as SMTPTransport.Options
+
+  return nodemailer.createTransport(options)
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {

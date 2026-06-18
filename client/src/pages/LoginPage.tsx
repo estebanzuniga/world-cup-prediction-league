@@ -50,14 +50,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                  Contraseña
-                </label>
-                <Link to="/forgot-password" className="text-xs text-blue-400 hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                Contraseña
+              </label>
               <input
                 id="password"
                 type="password"
@@ -68,6 +63,11 @@ export default function LoginPage() {
                 className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
                 placeholder="••••••••"
               />
+              <div className="mt-1 text-right">
+                <Link to="/forgot-password" className="text-xs text-blue-400 hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
           </div>
 

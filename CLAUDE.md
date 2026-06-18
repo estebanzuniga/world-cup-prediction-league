@@ -81,8 +81,8 @@ cd server && npx vitest run src/__tests__/scoring.test.ts
 | `CLIENT_URL` | CORS origin for the Vite dev server (default `http://localhost:5173`) |
 | `TELEGRAM_BOT_TOKEN` | Token from @BotFather — enables the Telegram bot (skipped if unset) |
 | `TELEGRAM_ADMIN_CHAT_ID` | Your Telegram chat ID from @userinfobot — only this ID can run bot commands |
-| `RESEND_API_KEY` | API key from resend.com — enables password reset emails |
-| `SMTP_FROM` | Sender address shown in emails (e.g. `Goalcaster <you@yourdomain.com>`); defaults to `onboarding@resend.dev` |
+| `BREVO_API_KEY` | API key from brevo.com — enables password reset emails |
+| `EMAIL_FROM` | Verified sender email address in Brevo |
 
 The test setup (`server/src/__tests__/setup.ts`) loads the root `.env` and injects fallback JWT secrets so tests run without a real `.env`.
 

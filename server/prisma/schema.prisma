@@ -16,13 +16,27 @@ model User {
   avatarColor  String?
   createdAt    DateTime @default(now())
 
-  createdLeagues     League[]           @relation("LeagueCreator")
-  memberships        LeagueMember[]
-  predictions        Prediction[]
-  points             PointsLedger[]
-  createdTokens      InviteToken[]      @relation("InviteTokenCreator")
-  usedTokens         InviteToken[]      @relation("InviteTokenUsed")
-  pushSubscriptions  PushSubscription[]
+  createdLeagues      League[]             @relation("LeagueCreator")
+  memberships         LeagueMember[]
+  predictions         Prediction[]
+  points              PointsLedger[]
+  createdTokens       InviteToken[]        @relation("InviteTokenCreator")
+  usedTokens          InviteToken[]        @relation("InviteTokenUsed")
+  pushSubscriptions   PushSubscription[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model League {

@@ -81,6 +81,12 @@ cd server && npx vitest run src/__tests__/scoring.test.ts
 | `CLIENT_URL` | CORS origin for the Vite dev server (default `http://localhost:5173`) |
 | `TELEGRAM_BOT_TOKEN` | Token from @BotFather — enables the Telegram bot (skipped if unset) |
 | `TELEGRAM_ADMIN_CHAT_ID` | Your Telegram chat ID from @userinfobot — only this ID can run bot commands |
+| `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (default `587`) |
+| `SMTP_SECURE` | Set to `true` for port 465 TLS, omit or `false` for STARTTLS |
+| `SMTP_USER` | SMTP username / email address |
+| `SMTP_PASS` | SMTP password or app password |
+| `SMTP_FROM` | Sender address shown in emails (defaults to `SMTP_USER` if unset) |
 
 The test setup (`server/src/__tests__/setup.ts`) loads the root `.env` and injects fallback JWT secrets so tests run without a real `.env`.
 
@@ -97,4 +103,4 @@ The test setup (`server/src/__tests__/setup.ts`) loads the root `.env` and injec
 - Leaderboard is only visible to league members
 
 ## Database schema (Prisma)
-`User` — `League` — `LeagueMember` (composite PK) — `Match` — `Prediction` (unique on `userId+matchId`) — `PointsLedger` (unique on `userId+matchId+leagueId`). Prisma schema lives at `server/prisma/schema.prisma`; migrations are in `server/prisma/migrations/`.
+`User` — `League` — `LeagueMember` (composite PK) — `Match` — `Prediction` (unique on `userId+matchId`) — `PointsLedger` (unique on `userId+matchId+leagueId`) — `PasswordResetToken` (token unique; expires 1 h; usedAt marks consumed). Prisma schema lives at `server/prisma/schema.prisma`; migrations are in `server/prisma/migrations/`.

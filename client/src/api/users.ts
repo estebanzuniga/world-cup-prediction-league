@@ -20,3 +20,13 @@ export async function updateAvatarColor(
     body: JSON.stringify({ avatarColor }),
   })
 }
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<ApiResult<{ message: string }>> {
+  return apiFetch('/api/users/me/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}

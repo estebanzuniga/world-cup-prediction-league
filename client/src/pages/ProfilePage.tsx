@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isApiError, logout, removeToken } from '../api'
-import { getMe, updateAvatarColor, type UserProfile } from '../api/users'
+import { getMe, updateAvatarColor, changePassword, type UserProfile } from '../api/users'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const AVATAR_COLORS = [
@@ -30,6 +30,13 @@ export default function ProfilePage() {
   const [color, setColor] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pwCurrent, setPwCurrent] = useState('')
+  const [pwNew, setPwNew] = useState('')
+  const [pwConfirm, setPwConfirm] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwSuccess, setPwSuccess] = useState(false)
   const push = usePushNotifications()
 
   useEffect(() => {
@@ -53,6 +60,23 @@ export default function ProfilePage() {
     await logout()
     removeToken()
     navigate('/login')
+  }
+
+  function openPasswordModal() {
+    setPwCurrent(''); setPwNew(''); setPwConfirm('')
+    setPwError(null); setPwSuccess(false)
+    setShowPasswordModal(true)
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (pwNew !== pwConfirm) { setPwError('Las contraseñas no coinciden.'); return }
+    setPwLoading(true); setPwError(null)
+    const result = await changePassword(pwCurrent, pwNew)
+    setPwLoading(false)
+    if (isApiError(result)) { setPwError(result.error); return }
+    setPwSuccess(true)
+    setTimeout(() => setShowPasswordModal(false), 1500)
   }
 
   if (!user) {
@@ -132,6 +156,14 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Change password */}
+      <button
+        onClick={openPasswordModal}
+        className="mb-3 w-full rounded-xl bg-gray-800 px-4 py-3 text-sm font-medium text-gray-300 transition hover:bg-gray-700 hover:text-white"
+      >
+        Cambiar contraseña
+      </button>
+
       {/* Logout */}
       <button
         onClick={handleLogout}
@@ -141,6 +173,79 @@ export default function ProfilePage() {
       </button>
 
       <p className="mt-8 text-center text-xs text-gray-600">Creado por Esteban ⚽</p>
+
+      {/* Change password modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-gray-800 p-6 shadow-xl">
+            <h2 className="mb-4 text-base font-bold text-white">Cambiar contraseña</h2>
+
+            {pwSuccess ? (
+              <p className="text-center text-sm text-green-400">¡Contraseña actualizada!</p>
+            ) : (
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400">Contraseña actual</label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    value={pwCurrent}
+                    onChange={e => setPwCurrent(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400">Nueva contraseña</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={pwNew}
+                    onChange={e => setPwNew(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400">Confirmar contraseña</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={pwConfirm}
+                    onChange={e => setPwConfirm(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+                    placeholder="Repite la contraseña"
+                  />
+                </div>
+
+                {pwError && <p className="text-xs text-red-400">{pwError}</p>}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="flex-1 rounded-lg bg-gray-700 py-2 text-sm font-medium text-gray-300 transition hover:bg-gray-600"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pwLoading}
+                    className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {pwLoading ? 'Guardando…' : 'Guardar'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }

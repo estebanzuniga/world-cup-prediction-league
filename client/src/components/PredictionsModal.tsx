@@ -4,6 +4,7 @@ import {
   type FinishedMatchWithPredictions,
 } from '../api/leagues'
 import { isApiError } from '../api'
+import { toSpanish } from '../utils/countryNames'
 
 interface Props {
   leagueId: string
@@ -31,7 +32,7 @@ const BREAKDOWN_STYLES = {
 function matchLabel(match: FinishedMatchWithPredictions) {
   const d = new Date(match.kickoffTime)
   const day = d.toLocaleDateString('es', { day: 'numeric', month: 'short' })
-  return `${match.homeTeam} vs ${match.awayTeam} · ${day}`
+  return `${toSpanish(match.homeTeam)} vs ${toSpanish(match.awayTeam)} · ${day}`
 }
 
 export default function PredictionsModal({ leagueId, members, onClose }: Props) {

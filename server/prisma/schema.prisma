@@ -96,6 +96,7 @@ model Match {
   homeScore         Int?
   awayScore         Int?
   status            MatchStatus @default(SCHEDULED)
+  stage             String?
   externalId        String      @unique
 
   predictions Prediction[]

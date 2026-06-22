@@ -22,6 +22,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           awayTeamCrestUrl: true,
           kickoffTime: true,
           status: true,
+          stage: true,
           homeScore: true,
           awayScore: true,
         },

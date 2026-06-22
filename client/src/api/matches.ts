@@ -17,6 +17,7 @@ export interface Match {
   awayTeamCrestUrl: string | null
   kickoffTime: string
   status: MatchStatus
+  stage: string | null
   homeScore: number | null
   awayScore: number | null
   myPrediction: MyPrediction | null

@@ -25,6 +25,23 @@ function formatDateLabel(iso: string) {
   })
 }
 
+const STAGE_LABELS: Record<string, string> = {
+  GROUP_STAGE: 'Fase de grupos',
+  LAST_32: '16vos de final',
+  LAST_16: '8vos de final',
+  QUARTER_FINALS: '4tos de final',
+  SEMI_FINALS: 'Semifinales',
+  THIRD_PLACE: 'Tercer lugar',
+  FINAL: 'Final',
+}
+
+function stageLabel(matches: Match[]): string | null {
+  const stages = new Set(matches.map(m => m.stage))
+  if (stages.size !== 1) return null
+  const [stage] = stages
+  return stage ? STAGE_LABELS[stage] ?? null : null
+}
+
 function groupByDate(matches: Match[]): [string, string, Match[]][] {
   const map = new Map<string, { label: string; matches: Match[] }>()
   for (const m of matches) {
@@ -44,10 +61,12 @@ function MatchdaySection({
   matches: Match[]
   onUnauthorized: () => void
 }) {
+  const stage = stageLabel(matches)
   return (
     <section>
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
         {label}
+        {stage && <span className="text-blue-400"> · {stage}</span>}
       </h2>
       <div className="space-y-2">
         {matches.map(m => (

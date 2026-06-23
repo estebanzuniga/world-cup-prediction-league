@@ -244,6 +244,14 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
         </div>
       )}
 
+      {isFinished && match.advancingTeam && match.homeScore === match.awayScore && (
+        <div className="mt-1">
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-900/40 px-2.5 py-0.5 text-xs font-medium text-blue-300">
+            {toSpanish(match.advancingTeam === 'HOME' ? match.homeTeam : match.awayTeam)} avanzó
+          </span>
+        </div>
+      )}
+
       { (isLive || isFinished) && (
         <div className="py-2 text-xs text-gray-200">
           { prediction ?

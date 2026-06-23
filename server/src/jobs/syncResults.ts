@@ -6,6 +6,7 @@ import { toSpanish } from '../utils/countryNames'
 
 const API_BASE = 'https://api.football-data.org/v4'
 const COMPETITION = 'WC'
+const KNOCKOUT_STAGES = new Set(['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'])
 
 interface FdoMatch {
   id: number
@@ -151,6 +152,14 @@ export async function syncResults(): Promise<void> {
       })
 
       const winner = fdoMatch.score.winner
+      const isDraw = homeScore === awayScore
+      const isKnockout = dbMatch.stage !== null && KNOCKOUT_STAGES.has(dbMatch.stage)
+
+      if (isDraw && isKnockout && winner !== 'HOME_TEAM' && winner !== 'AWAY_TEAM') {
+        console.log(`[syncResults] Waiting for penalty winner: ${fdoMatch.homeTeam.name} vs ${fdoMatch.awayTeam.name} (winner=${winner})`)
+        continue
+      }
+
       const advancingTeam: 'HOME' | 'AWAY' | null =
         winner === 'HOME_TEAM' ? 'HOME' : winner === 'AWAY_TEAM' ? 'AWAY' : null
 

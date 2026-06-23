@@ -19,6 +19,7 @@ export interface Match {
   kickoffTime: string
   status: MatchStatus
   stage: string | null
+  advancingTeam: 'HOME' | 'AWAY' | null
   homeScore: number | null
   awayScore: number | null
   myPrediction: MyPrediction | null

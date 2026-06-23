@@ -43,11 +43,7 @@ export function registerTelegramBot(): void {
       await ctx.reply('Los goles deben ser números.')
       return
     }
-    const isDraw = homeScore === awayScore
-    if (isDraw && advancingArg !== 'HOME' && advancingArg !== 'AWAY') {
-      await ctx.reply('En caso de empate debes indicar quién avanza: /resultado <id> <golesLocal> <golesVisitante> HOME|AWAY')
-      return
-    }
+
     const advancingTeam: 'HOME' | 'AWAY' | null =
       advancingArg === 'HOME' ? 'HOME' : advancingArg === 'AWAY' ? 'AWAY' : null
     const dbMatch = await prisma.match.findUnique({ where: { id: matchId } })
@@ -55,6 +51,14 @@ export function registerTelegramBot(): void {
       await ctx.reply('Partido no encontrado. Usa /partidos para ver la lista.')
       return
     }
+
+    const isDraw = homeScore === awayScore
+    const isKnockout = dbMatch.stage === 'ROUND_OF_16' || dbMatch.stage === 'QUARTER_FINALS' || dbMatch.stage === 'SEMI_FINALS' || dbMatch.stage === 'FINAL'
+    if (isKnockout && isDraw && advancingArg !== 'HOME' && advancingArg !== 'AWAY') {
+      await ctx.reply('En caso de empate debes indicar quién avanza: /resultado <id> <golesLocal> <golesVisitante> HOME|AWAY')
+      return
+    }
+
     try {
       const { predictionsProcessed } = await settleMatch(dbMatch.id, homeScore, awayScore, advancingTeam)
       await ctx.reply(

@@ -196,28 +196,41 @@ export default function LeaderboardPage() {
               </button>
             </div>
 
-            <div className="space-y-3 px-5 pb-8 pt-1">
-              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
-                <span className="text-2xl font-bold text-green-400">3</span>
-                <div>
-                  <p className="font-medium text-white">Marcador exacto</p>
-                  <p className="text-sm text-gray-400">Predijiste el resultado exacto del partido</p>
+            <div className="space-y-2 px-5 pb-8 pt-1">
+              <p className="pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Fase de grupos</p>
+
+              {[
+                { pts: '3', color: 'text-green-400', title: 'Marcador exacto', desc: 'Predijiste el resultado exacto' },
+                { pts: '1', color: 'text-amber-400', title: 'Resultado correcto', desc: 'Victoria, empate o derrota bien — marcador no' },
+                { pts: '0', color: 'text-gray-500',  title: 'Incorrecto', desc: 'El resultado no coincide' },
+              ].map(({ pts, color, title, desc }) => (
+                <div key={title} className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-2.5">
+                  <span className={`w-8 shrink-0 text-center text-xl font-bold ${color}`}>{pts}</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{title}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
-                <span className="text-2xl font-bold text-amber-400">1</span>
-                <div>
-                  <p className="font-medium text-white">Resultado correcto</p>
-                  <p className="text-sm text-gray-400">Acertaste victoria, empate o derrota pero no el marcador</p>
+              ))}
+
+              <p className="pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                Fase eliminatoria <span className="font-normal normal-case text-gray-600">· Puntos aumentan por ronda</span>
+              </p>
+
+              {[
+                { pts: '5–10', color: 'text-green-400',   title: 'Marcador exacto + clasificado', desc: 'Marcador y equipo clasificado correctos' },
+                { pts: '3–7',  color: 'text-emerald-400', title: 'Clasificado + diferencia', desc: 'Clasificado y margen de goles correctos · En empate: marcador o clasificado (no ambos)' },
+                { pts: '2–5',  color: 'text-amber-400',   title: 'Solo clasificado', desc: 'Equipo clasificado correcto, margen no' },
+                { pts: '1–3',  color: 'text-gray-400',    title: 'Goles de un equipo', desc: 'Acertaste los goles de un equipo, clasificado no' },
+              ].map(({ pts, color, title, desc }) => (
+                <div key={title} className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-2.5">
+                  <span className={`w-10 shrink-0 text-center text-sm font-bold ${color}`}>{pts}</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{title}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 rounded-lg bg-gray-700/50 px-4 py-3">
-                <span className="text-2xl font-bold text-gray-500">0</span>
-                <div>
-                  <p className="font-medium text-white">Resultado incorrecto</p>
-                  <p className="text-sm text-gray-400">El resultado no coincide con tu pronóstico</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

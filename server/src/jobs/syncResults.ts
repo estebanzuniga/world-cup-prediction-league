@@ -10,9 +10,11 @@ const COMPETITION = 'WC'
 interface FdoMatch {
   id: number
   status: string
+  stage: string
   homeTeam: { name: string; crest: string }
   awayTeam: { name: string; crest: string }
   score: {
+    winner: string | null
     fullTime: { home: number | null; away: number | null }
   }
 }
@@ -32,11 +34,12 @@ async function fetchFinishedMatches(): Promise<FdoMatch[]> {
 export async function settleMatch(
   matchId: string,
   homeScore: number,
-  awayScore: number
+  awayScore: number,
+  advancingTeam?: 'HOME' | 'AWAY' | null
 ): Promise<{ predictionsProcessed: number }> {
   const updated = await prisma.match.update({
     where: { id: matchId },
-    data: { homeScore, awayScore, status: 'FINISHED' },
+    data: { homeScore, awayScore, status: 'FINISHED', ...(advancingTeam !== undefined ? { advancingTeam } : {}) },
   })
   console.log(`[settleMatch] Settled: ${updated.homeTeam} ${homeScore}–${awayScore} ${updated.awayTeam}`)
 
@@ -49,8 +52,9 @@ export async function settleMatch(
 
   for (const prediction of predictions) {
     const scored = calculatePoints(
-      { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
-      { homeScore, awayScore }
+      { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway, predictedAdvancing: prediction.predictedAdvancing },
+      { homeScore, awayScore },
+      { stage: updated.stage, advancingTeam: updated.advancingTeam }
     )
     console.log(
       `[settleMatch]   ${prediction.user.name ?? prediction.userId} predicted ${prediction.predictedHome}–${prediction.predictedAway} → ${scored.points}pt (${scored.breakdown})`
@@ -79,14 +83,12 @@ export async function settleMatch(
       })
     }
 
-    const pointsLabel =
-      scored.points === 3 ? '+3 puntos' : scored.points === 1 ? '+1 punto' : '+0 puntos'
-    const emoji = scored.points === 3 ? '🎯' : scored.points === 1 ? '✅' : '❌'
+    const pointsLabel = scored.points > 0 ? `+${scored.points} pts` : '+0 pts'
     const subs = await prisma.pushSubscription.findMany({ where: { userId: prediction.userId } })
     for (const sub of subs) {
       const result = await sendPush(sub, {
         title: `${toSpanish(updated.homeTeam)} vs ${toSpanish(updated.awayTeam)} · Resultado`,
-        body: `El partido terminó ${homeScore}–${awayScore} · ${pointsLabel} ${emoji}`,
+        body: `El partido terminó ${homeScore}–${awayScore} · ${pointsLabel} ${scored.emoji}`,
         url: '/',
       })
       if (result === 'gone') staleSubIds.push(sub.id)
@@ -148,7 +150,11 @@ export async function syncResults(): Promise<void> {
         },
       })
 
-      await settleMatch(dbMatch.id, homeScore, awayScore)
+      const winner = fdoMatch.score.winner
+      const advancingTeam: 'HOME' | 'AWAY' | null =
+        winner === 'HOME_TEAM' ? 'HOME' : winner === 'AWAY_TEAM' ? 'AWAY' : null
+
+      await settleMatch(dbMatch.id, homeScore, awayScore, advancingTeam)
       matchesSynced++
     }
 

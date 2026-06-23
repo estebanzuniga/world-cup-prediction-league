@@ -23,11 +23,14 @@ function MatchCrest({ url, name }: { url: string | null; name: string }) {
   )
 }
 
-const BREAKDOWN_STYLES = {
-  exact: 'text-green-400',
-  result: 'text-amber-400',
-  none: 'text-gray-500',
-} as const
+const BREAKDOWN_STYLES: Record<string, string> = {
+  exact:    'text-green-400',
+  adv_diff: 'text-emerald-400',
+  adv_only: 'text-amber-400',
+  result:   'text-amber-400',
+  one_team: 'text-gray-400',
+  none:     'text-gray-500',
+}
 
 function matchLabel(match: FinishedMatchWithPredictions) {
   const d = new Date(match.kickoffTime)

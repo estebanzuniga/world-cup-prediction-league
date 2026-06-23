@@ -30,7 +30,7 @@ export interface MemberPrediction {
   predictedHome: number
   predictedAway: number
   points: number | null
-  breakdown: 'exact' | 'result' | 'none' | null
+  breakdown: 'exact' | 'result' | 'adv_diff' | 'adv_only' | 'one_team' | 'none' | null
 }
 
 export interface FinishedMatchWithPredictions {

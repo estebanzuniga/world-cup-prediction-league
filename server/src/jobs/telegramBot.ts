@@ -32,24 +32,31 @@ export function registerTelegramBot(): void {
   bot.hears(/^\/resultado (.+)$/, async (ctx) => {
     if (!isAdmin(ctx.chat.id)) return
     const parts = ctx.match[1].trim().split(/\s+/)
-    if (parts.length !== 3) {
-      await ctx.reply('Uso: /resultado <id> <golesLocal> <golesVisitante>')
+    if (parts.length < 3 || parts.length > 4) {
+      await ctx.reply('Uso: /resultado <id> <golesLocal> <golesVisitante> [HOME|AWAY]')
       return
     }
-    const [matchId, homeStr, awayStr] = parts
+    const [matchId, homeStr, awayStr, advancingArg] = parts
     const homeScore = parseInt(homeStr, 10)
     const awayScore = parseInt(awayStr, 10)
     if (isNaN(homeScore) || isNaN(awayScore)) {
       await ctx.reply('Los goles deben ser números.')
       return
     }
+    const isDraw = homeScore === awayScore
+    if (isDraw && advancingArg !== 'HOME' && advancingArg !== 'AWAY') {
+      await ctx.reply('En caso de empate debes indicar quién avanza: /resultado <id> <golesLocal> <golesVisitante> HOME|AWAY')
+      return
+    }
+    const advancingTeam: 'HOME' | 'AWAY' | null =
+      advancingArg === 'HOME' ? 'HOME' : advancingArg === 'AWAY' ? 'AWAY' : null
     const dbMatch = await prisma.match.findUnique({ where: { id: matchId } })
     if (!dbMatch) {
       await ctx.reply('Partido no encontrado. Usa /partidos para ver la lista.')
       return
     }
     try {
-      const { predictionsProcessed } = await settleMatch(dbMatch.id, homeScore, awayScore)
+      const { predictionsProcessed } = await settleMatch(dbMatch.id, homeScore, awayScore, advancingTeam)
       await ctx.reply(
         `✅ ${toSpanish(dbMatch.homeTeam)} ${homeScore}–${awayScore} ${toSpanish(dbMatch.awayTeam)}\n${predictionsProcessed} pronósticos procesados.`
       )

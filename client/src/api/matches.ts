@@ -7,7 +7,7 @@ export interface MyPrediction {
   predictedAdvancing: 'HOME' | 'AWAY' | null
   /** null until the match is FINISHED */
   points: number | null
-  breakdown: 'exact' | 'result' | 'none' | null
+  breakdown: 'exact' | 'result' | 'adv_diff' | 'adv_only' | 'one_team' | 'none' | null
 }
 
 export interface Match {

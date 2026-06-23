@@ -32,8 +32,9 @@ async function backfillPoints(userId: string, leagueId: string): Promise<void> {
   })
   for (const prediction of predictions) {
     const scored = calculatePoints(
-      { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway },
+      { predictedHome: prediction.predictedHome, predictedAway: prediction.predictedAway, predictedAdvancing: prediction.predictedAdvancing },
       { homeScore: prediction.match.homeScore!, awayScore: prediction.match.awayScore! },
+      { stage: prediction.match.stage, advancingTeam: prediction.match.advancingTeam },
     )
     await prisma.pointsLedger.upsert({
       where: { userId_matchId_leagueId: { userId, matchId: prediction.matchId, leagueId } },
@@ -227,11 +228,11 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
         ],
       },
       orderBy: { kickoffTime: 'desc' },
-      select: { id: true, homeTeam: true, awayTeam: true, homeTeamCrestUrl: true, awayTeamCrestUrl: true, kickoffTime: true, homeScore: true, awayScore: true, status: true },
+      select: { id: true, homeTeam: true, awayTeam: true, homeTeamCrestUrl: true, awayTeamCrestUrl: true, kickoffTime: true, homeScore: true, awayScore: true, status: true, stage: true, advancingTeam: true },
     })
     const predictions = await prisma.prediction.findMany({
       where: { matchId: { in: matches.map((m) => m.id) }, userId: { in: memberIds } },
-      select: { matchId: true, userId: true, predictedHome: true, predictedAway: true },
+      select: { matchId: true, userId: true, predictedHome: true, predictedAway: true, predictedAdvancing: true },
     })
     const byMatch = new Map<string, typeof predictions>()
     for (const p of predictions) {
@@ -244,8 +245,9 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
       predictions: (byMatch.get(match.id) ?? []).map((p) => {
         if (match.status === 'FINISHED' && match.homeScore !== null && match.awayScore !== null) {
           const scored = calculatePoints(
-            { predictedHome: p.predictedHome, predictedAway: p.predictedAway },
-            { homeScore: match.homeScore, awayScore: match.awayScore }
+            { predictedHome: p.predictedHome, predictedAway: p.predictedAway, predictedAdvancing: p.predictedAdvancing },
+            { homeScore: match.homeScore, awayScore: match.awayScore },
+            { stage: match.stage, advancingTeam: match.advancingTeam }
           )
           return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: scored.points, breakdown: scored.breakdown }
         }

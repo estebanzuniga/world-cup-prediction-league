@@ -23,6 +23,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           kickoffTime: true,
           status: true,
           stage: true,
+          advancingTeam: true,
           homeScore: true,
           awayScore: true,
         },
@@ -50,8 +51,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       if (pred) {
         const scored = isFinished
           ? calculatePoints(
-              { predictedHome: pred.predictedHome, predictedAway: pred.predictedAway },
-              { homeScore: match.homeScore!, awayScore: match.awayScore! }
+              { predictedHome: pred.predictedHome, predictedAway: pred.predictedAway, predictedAdvancing: pred.predictedAdvancing },
+              { homeScore: match.homeScore!, awayScore: match.awayScore! },
+              { stage: match.stage, advancingTeam: match.advancingTeam }
             )
           : null
         myPrediction = {

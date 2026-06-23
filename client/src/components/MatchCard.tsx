@@ -12,21 +12,27 @@ interface Props {
 }
 
 function PointsBadge({ breakdown, points }: { breakdown: NonNullable<MyPrediction['breakdown']>; points: number }) {
-  const styles = {
-    exact:  'bg-green-600 text-white',
-    result: 'bg-amber-500 text-white',
-    none:   'bg-gray-600 text-gray-300',
-  } as const
+  const styles: Record<NonNullable<MyPrediction['breakdown']>, string> = {
+    exact:    'bg-green-600 text-white',
+    adv_diff: 'bg-emerald-600 text-white',
+    adv_only: 'bg-amber-500 text-white',
+    result:   'bg-amber-500 text-white',
+    one_team: 'bg-gray-500 text-white',
+    none:     'bg-gray-600 text-gray-300',
+  }
 
-  const labels = {
-    exact:  `${points} pts ✓`,
-    result: `${points} pt`,
-    none:   '0 pts',
-  } as const
+  const suffix: Record<NonNullable<MyPrediction['breakdown']>, string> = {
+    exact:    ' ✓',
+    adv_diff: '',
+    adv_only: '',
+    result:   '',
+    one_team: '',
+    none:     '',
+  }
 
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${styles[breakdown]}`}>
-      {labels[breakdown]}
+      {points} pts{suffix[breakdown]}
     </span>
   )
 }

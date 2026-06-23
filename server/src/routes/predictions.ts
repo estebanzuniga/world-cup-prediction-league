@@ -9,7 +9,7 @@ router.use(requireAuth)
 // POST /api/predictions — submit or update a prediction (upsert)
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { matchId, predictedHome, predictedAway } = req.body ?? {}
+    const { matchId, predictedHome, predictedAway, predictedAdvancing } = req.body ?? {}
 
     if (
       !matchId ||
@@ -30,6 +30,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return
     }
 
+    if (predictedAdvancing !== undefined && predictedAdvancing !== null && predictedAdvancing !== 'HOME' && predictedAdvancing !== 'AWAY') {
+      res.status(400).json({ error: 'predictedAdvancing must be HOME, AWAY, or null' })
+      return
+    }
+
     const match = await prisma.match.findUnique({ where: { id: matchId } })
     if (!match) {
       res.status(404).json({ error: 'Match not found' })
@@ -41,10 +46,20 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return
     }
 
+    const KNOCKOUT_STAGES = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL']
+    const isKnockout = match.stage !== null && KNOCKOUT_STAGES.includes(match.stage)
+    const isDraw = predictedHome === predictedAway
+    if (isKnockout && isDraw && !predictedAdvancing) {
+      res.status(400).json({ error: 'predictedAdvancing is required for knockout draw predictions' })
+      return
+    }
+
+    const advancing = isKnockout && isDraw ? (predictedAdvancing as 'HOME' | 'AWAY') : null
+
     const prediction = await prisma.prediction.upsert({
       where: { userId_matchId: { userId: req.user!.id, matchId } },
-      create: { userId: req.user!.id, matchId, predictedHome, predictedAway },
-      update: { predictedHome, predictedAway, submittedAt: new Date() },
+      create: { userId: req.user!.id, matchId, predictedHome, predictedAway, predictedAdvancing: advancing },
+      update: { predictedHome, predictedAway, predictedAdvancing: advancing, submittedAt: new Date() },
     })
 
     res.status(201).json({ prediction })

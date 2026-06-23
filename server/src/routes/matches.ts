@@ -29,7 +29,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       }),
       prisma.prediction.findMany({
         where: { userId: req.user!.id },
-        select: { matchId: true, predictedHome: true, predictedAway: true },
+        select: { matchId: true, predictedHome: true, predictedAway: true, predictedAdvancing: true },
       }),
     ])
 
@@ -42,6 +42,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       let myPrediction: {
         predictedHome: number
         predictedAway: number
+        predictedAdvancing: string | null
         points: number | null
         breakdown: string | null
       } | null = null
@@ -56,6 +57,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         myPrediction = {
           predictedHome: pred.predictedHome,
           predictedAway: pred.predictedAway,
+          predictedAdvancing: pred.predictedAdvancing,
           points: scored?.points ?? null,
           breakdown: scored?.breakdown ?? null,
         }

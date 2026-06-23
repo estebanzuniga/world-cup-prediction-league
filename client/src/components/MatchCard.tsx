@@ -4,6 +4,8 @@ import { submitPrediction } from '../api/predictions'
 import { isApiError } from '../api'
 import { toSpanish } from '../utils/countryNames'
 
+const KNOCKOUT_STAGES = new Set(['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'])
+
 interface Props {
   match: Match
   onUnauthorized: () => void
@@ -87,6 +89,9 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
   const [away, setAway] = useState(
     match.myPrediction ? String(match.myPrediction.predictedAway) : ''
   )
+  const [advancing, setAdvancing] = useState<'HOME' | 'AWAY' | null>(
+    match.myPrediction?.predictedAdvancing ?? null
+  )
   const [prediction, setPrediction] = useState<MyPrediction | null>(match.myPrediction)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
@@ -97,14 +102,20 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
   const isUpcoming = match.status === 'SCHEDULED' && !isLocked
   const isFinished = match.status === 'FINISHED'
 
+  const isKnockout = match.stage !== null && KNOCKOUT_STAGES.has(match.stage)
+  const isDraw = home !== '' && away !== '' && Number(home) === Number(away)
+  const showAdvancingPicker = isKnockout && isDraw
+  const advancingRequired = showAdvancingPicker && advancing === null
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (home === '' || away === '') return
     const predictedHome = Number(home)
     const predictedAway = Number(away)
+    const predictedAdvancing = isKnockout && predictedHome === predictedAway ? advancing : null
     setSaving(true)
     setError(null)
-    const result = await submitPrediction(match.id, predictedHome, predictedAway)
+    const result = await submitPrediction(match.id, predictedHome, predictedAway, predictedAdvancing)
     setSaving(false)
     if (isApiError(result)) {
       if (result.statusCode === 401) { onUnauthorized(); return }
@@ -112,12 +123,21 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
       setError(result.error)
       return
     }
-    setPrediction({ predictedHome, predictedAway, points: null, breakdown: null })
+    setPrediction({ predictedHome, predictedAway, predictedAdvancing, points: null, breakdown: null })
     setSavedAt(Date.now())
     setTimeout(() => setSavedAt(null), 2500)
   }
 
   const hasExisting = prediction !== null
+
+  function predictionLabel(pred: MyPrediction) {
+    const score = `${pred.predictedHome}–${pred.predictedAway}`
+    if (pred.predictedAdvancing && pred.predictedHome === pred.predictedAway) {
+      const advTeam = pred.predictedAdvancing === 'HOME' ? match.homeTeam : match.awayTeam
+      return `${score} (avanza ${toSpanish(advTeam)})`
+    }
+    return score
+  }
 
   return (
     <div className="flex flex-col items-center rounded-lg bg-gray-800 px-4 py-3 shadow-sm">
@@ -175,13 +195,34 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
       {/* Sub-rows for upcoming matches: feedback, then kickoff time, then submit */}
       { isUpcoming && (
         <div className="mt-2 flex flex-col items-center gap-1">
+          {showAdvancingPicker && (
+            <div className="mt-1 flex flex-col items-center gap-1.5">
+              <span className="text-xs text-gray-400">¿Quién avanza?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAdvancing('HOME')}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium transition ${advancing === 'HOME' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  {toSpanish(match.homeTeam)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdvancing('AWAY')}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium transition ${advancing === 'AWAY' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  {toSpanish(match.awayTeam)}
+                </button>
+              </div>
+            </div>
+          )}
           { prediction &&
             <div className="min-h-[1rem] text-xs">
               {error && <span className="text-red-400">{error}</span>}
               {savedAt && !error && <span className="text-green-400">¡Guardado!</span>}
               {!error && !savedAt && hasExisting && (
                 <span className="text-gray-500">
-                  Tu pronóstico: {prediction!.predictedHome}–{prediction!.predictedAway}
+                  Tu pronóstico: {predictionLabel(prediction!)}
                 </span>
               )}
             </div>
@@ -189,7 +230,7 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
           <button
             type="submit"
             form={`predict-${match.id}`}
-            disabled={isLocked || saving || home === '' || away === ''}
+            disabled={isLocked || saving || home === '' || away === '' || advancingRequired}
             className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-600 disabled:opacity-50"
           >
             {saving ? '…' : hasExisting ? 'Actualizar' : 'Pronosticar'}
@@ -200,7 +241,7 @@ export default function MatchCard({ match, onUnauthorized }: Props) {
       { (isLive || isFinished) && (
         <div className="py-2 text-xs text-gray-200">
           { prediction ?
-            `Tu pronóstico: ${prediction!.predictedHome}–${prediction!.predictedAway}`
+            `Tu pronóstico: ${predictionLabel(prediction!)}`
             :
             'Sin pronóstico'
           }

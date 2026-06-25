@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
@@ -8,11 +7,6 @@ import { useLeague } from '../contexts/LeagueContext'
 import LeagueSelect from '../components/LeagueSelect'
 import { getLeagueHistory, type HistoryMember, type HistoryDataPoint } from '../api/leagues'
 import { isApiError } from '../api'
-
-function shortName(full: string) {
-  const parts = full.trim().split(/\s+/)
-  return parts.length >= 2 ? `${parts[0]} ${parts[1][0]}.` : parts[0]
-}
 
 const LINE_COLORS = [
   '#4ade80',
@@ -30,6 +24,11 @@ const LINE_COLORS = [
   '#a3e635',
 ]
 
+function shortName(full: string) {
+  const parts = full.trim().split(/\s+/)
+  return parts.length >= 2 ? `${parts[0]} ${parts[1][0]}.` : parts[0]
+}
+
 interface ChartPoint {
   index: number
   label: string
@@ -43,49 +42,6 @@ interface TooltipEntry {
   payload: ChartPoint
 }
 
-interface TooltipData {
-  payload: TooltipEntry[]
-}
-
-function TooltipPopover({ data, mouseY, members }: {
-  data: TooltipData
-  mouseY: number
-  members: HistoryMember[]
-}) {
-  const point = data.payload[0].payload
-  const sorted = [...data.payload].sort((a, b) => b.value - a.value)
-  const flipY = mouseY > window.innerHeight * 0.65
-
-  return createPortal(
-    <div
-      className="pointer-events-none rounded-lg border border-gray-700 bg-gray-900 p-3 shadow-xl"
-      style={{
-        position: 'fixed',
-        zIndex: 9999,
-        width: 'max-content',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        ...(flipY ? { bottom: window.innerHeight - mouseY + 12 } : { top: mouseY + 12 }),
-      }}
-    >
-      <p className="mb-2 text-center text-xs font-semibold text-gray-300">
-        {point.index === 0 ? 'Inicio' : `Partido ${point.index}: ${point.label}`}
-      </p>
-      {sorted.map((entry) => {
-        const member = members.find((m) => m.userId === entry.dataKey)
-        return (
-          <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: entry.stroke }} />
-            <span className="text-gray-300">{member ? shortName(member.name) : entry.dataKey}</span>
-            <span className="ml-auto pl-4 font-bold text-white">{entry.value} pts</span>
-          </div>
-        )
-      })}
-    </div>,
-    document.body,
-  )
-}
-
 export default function HistoryPage() {
   const { leagues, loading: leagueLoading, refreshKey } = useLeague()
   const [league, setLeague] = useState<(typeof leagues)[0] | null>(null)
@@ -93,8 +49,8 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryDataPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-  const tooltipDataRef = useRef<TooltipData | null>(null)
+  const [active, setActive] = useState(false)
+  const tooltipRef = useRef<{ payload: TooltipEntry[]; point: ChartPoint } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -117,9 +73,7 @@ export default function HistoryPage() {
     if (history.length === 0 || !scrollRef.current) return
     const el = scrollRef.current
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.scrollLeft = el.scrollWidth
-      })
+      requestAnimationFrame(() => { el.scrollLeft = el.scrollWidth })
     })
   }, [history])
 
@@ -155,6 +109,7 @@ export default function HistoryPage() {
   ]
 
   const chartWidth = Math.max(360, chartData.length * 32)
+  const tip = active ? tooltipRef.current : null
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -174,19 +129,45 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="rounded-xl bg-gray-800 p-4 shadow">
+
+          {/* Info panel */}
+          <div className="mb-3 flex min-h-[52px] flex-col items-center justify-center rounded-lg bg-gray-700/40 px-3 py-2">
+            {tip ? (
+              <>
+                <p className="mb-1.5 text-center text-xs font-semibold text-gray-300">
+                  {tip.point.index === 0 ? 'Inicio' : `Partido ${tip.point.index}: ${tip.point.label}`}
+                </p>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                  {[...tip.payload].sort((a, b) => b.value - a.value).map((entry) => {
+                    const member = members.find((m) => m.userId === entry.dataKey)
+                    return (
+                      <div key={entry.dataKey} className="flex items-center gap-1.5 text-sm">
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: entry.stroke }} />
+                        <span className="text-gray-300">{member ? shortName(member.name) : entry.dataKey}</span>
+                        <span className="font-bold text-white">{entry.value} pts</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-xs text-gray-600">Toca el gráfico para ver detalles</p>
+            )}
+          </div>
+
+          {/* Chart */}
           <div
             ref={scrollRef}
             className="overflow-x-auto"
-            style={{ height: 'calc(100dvh - 320px)', minHeight: 220 }}
-            onMouseMove={(e) => setCursorPos({ x: e.clientX, y: e.clientY })}
-            onMouseLeave={() => setCursorPos(null)}
+            style={{ height: 'calc(100dvh - 450px)', minHeight: 200 }}
+            onMouseMove={() => setActive(true)}
+            onMouseLeave={() => setActive(false)}
+            onTouchStart={() => setActive(true)}
+            onTouchEnd={() => setActive(false)}
           >
             <div style={{ width: chartWidth, height: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 8, right: 16, left: -8, bottom: 0 }}
-                >
+                <LineChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                   <XAxis
                     dataKey="index"
@@ -202,10 +183,12 @@ export default function HistoryPage() {
                   />
                   <Tooltip
                     content={(props: unknown) => {
-                      const p = props as { active?: boolean; payload?: TooltipEntry[]; coordinate?: { x: number; y: number } }
-                      tooltipDataRef.current = (p.active && p.payload?.length)
-                        ? { payload: p.payload }
-                        : null
+                      const p = props as { active?: boolean; payload?: TooltipEntry[] }
+                      if (p.active && p.payload?.length) {
+                        tooltipRef.current = { payload: p.payload, point: p.payload[0].payload }
+                      } else {
+                        tooltipRef.current = null
+                      }
                       return null
                     }}
                     cursor={{ stroke: '#4b5563', strokeWidth: 1 }}
@@ -227,8 +210,9 @@ export default function HistoryPage() {
               </ResponsiveContainer>
             </div>
           </div>
-          <p className="mb-1 text-center text-xs text-gray-500">Partido</p>
+          <p className="mt-1 text-center text-xs text-gray-500">Partido</p>
 
+          {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 px-2">
             {members.map((member, i) => (
               <div key={member.userId} className="flex items-center gap-1.5">
@@ -241,14 +225,6 @@ export default function HistoryPage() {
             ))}
           </div>
         </div>
-      )}
-
-      {cursorPos && tooltipDataRef.current && (
-        <TooltipPopover
-          data={tooltipDataRef.current}
-          mouseY={cursorPos.y}
-          members={members}
-        />
       )}
     </main>
   )

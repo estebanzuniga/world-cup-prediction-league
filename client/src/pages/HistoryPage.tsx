@@ -137,11 +137,11 @@ export default function HistoryPage() {
                 <p className="mb-1.5 text-center text-xs font-semibold text-gray-300">
                   {tip.point.index === 0 ? 'Inicio' : `Partido ${tip.point.index}: ${tip.point.label}`}
                 </p>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                <div className="flex flex-wrap justify-center gap-y-1">
                   {[...tip.payload].sort((a, b) => b.value - a.value).map((entry) => {
                     const member = members.find((m) => m.userId === entry.dataKey)
                     return (
-                      <div key={entry.dataKey} className="flex items-center gap-1.5 text-xs">
+                      <div key={entry.dataKey} className="flex w-1/2 items-center justify-center gap-1.5 text-xs">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: entry.stroke }} />
                         <span className="text-gray-300">{member ? shortName(member.name) : entry.dataKey}</span>
                         <span className="font-bold text-white">{entry.value} pts</span>

@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto'
 import { prisma } from '../lib/prisma'
 import { requireAuth } from '../middleware/requireAuth'
 import { calculatePoints } from '../services/scoring'
+import { toSpanish } from '../utils/countryNames'
 
 const router = Router()
 router.use(requireAuth)
@@ -302,7 +303,7 @@ router.get('/:id/history', async (req: Request, res: Response, next: NextFunctio
       if (!matchMap.has(row.matchId)) {
         matchMap.set(row.matchId, {
           matchId: row.matchId,
-          label: `${row.match.homeTeam} vs ${row.match.awayTeam}`,
+          label: `${toSpanish(row.match.homeTeam)} vs ${toSpanish(row.match.awayTeam)}`,
           kickoffTime: row.match.kickoffTime.toISOString(),
           points: {},
         })

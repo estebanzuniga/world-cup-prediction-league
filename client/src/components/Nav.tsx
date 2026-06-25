@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useLeague } from '../contexts/LeagueContext'
-import { CalendarIcon, TrophyIcon, EnvelopeIcon, UserIcon } from './icons'
+import { CalendarIcon, TrophyIcon, ChartBarIcon, EnvelopeIcon, UserIcon } from './icons'
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
@@ -23,6 +23,10 @@ export default function Nav() {
         <NavLink to="/leaderboard" className={tabClass}>
           <TrophyIcon className="text-amber-400" />
           Posiciones
+        </NavLink>
+        <NavLink to="/history" className={tabClass}>
+          <ChartBarIcon className="text-red-400" />
+          Historial
         </NavLink>
         {isOwner && (
           <NavLink to="/invite" className={tabClass}>

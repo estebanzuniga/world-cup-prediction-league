@@ -12,6 +12,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import MatchesPage from './pages/MatchesPage'
 import LeaderboardPage from './pages/LeaderboardPage'
+import HistoryPage from './pages/HistoryPage'
 import InvitePage from './pages/InvitePage'
 import JoinPage from './pages/JoinPage'
 import ProfilePage from './pages/ProfilePage'
@@ -107,6 +108,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<MatchesPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/invite" element={<InvitePage />} />
             <Route path="/join/:token" element={<JoinPage />} />
             <Route path="/profile" element={<ProfilePage />} />

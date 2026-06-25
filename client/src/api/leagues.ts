@@ -58,6 +58,24 @@ export async function getLeaguePredictions(leagueId: string): Promise<ApiResult<
   return apiFetch<{ matches: FinishedMatchWithPredictions[] }>(`/api/leagues/${leagueId}/predictions`)
 }
 
+export interface HistoryMember {
+  userId: string
+  name: string
+  avatarUrl: string | null
+  avatarColor: string | null
+}
+
+export interface HistoryDataPoint {
+  matchId: string
+  label: string
+  kickoffTime: string
+  cumulative: Record<string, number>
+}
+
+export async function getLeagueHistory(leagueId: string): Promise<ApiResult<{ members: HistoryMember[]; history: HistoryDataPoint[] }>> {
+  return apiFetch<{ members: HistoryMember[]; history: HistoryDataPoint[] }>(`/api/leagues/${leagueId}/history`)
+}
+
 export async function joinLeague(token: string): Promise<ApiResult<{ league: League }>> {
   return apiFetch<{ league: League }>('/api/leagues/join', {
     method: 'POST',

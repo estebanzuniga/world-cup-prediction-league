@@ -260,6 +260,76 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
   }
 })
 
+// GET /api/leagues/:id/history
+router.get('/:id/history', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const leagueId = req.params.id
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      include: {
+        members: {
+          include: { user: { select: { id: true, name: true, avatarUrl: true, avatarColor: true } } },
+          orderBy: { joinedAt: 'asc' as const },
+        },
+      },
+    })
+    if (!league) { res.status(404).json({ error: 'League not found' }); return }
+    const isMember = league.members.some((m) => m.userId === req.user!.id)
+    if (!isMember) { res.status(403).json({ error: 'Forbidden' }); return }
+
+    const ledgerRows = await prisma.pointsLedger.findMany({
+      where: { leagueId },
+      include: { match: { select: { homeTeam: true, awayTeam: true, kickoffTime: true } } },
+      orderBy: { match: { kickoffTime: 'asc' } },
+    })
+
+    const members = league.members.map((m) => ({
+      userId: m.userId,
+      name: m.user.name,
+      avatarUrl: m.user.avatarUrl,
+      avatarColor: m.user.avatarColor,
+    }))
+    const memberIds = members.map((m) => m.userId)
+
+    // Group rows by match, preserving kickoffTime order
+    const matchMap = new Map<string, {
+      matchId: string
+      label: string
+      kickoffTime: string
+      points: Record<string, number>
+    }>()
+    for (const row of ledgerRows) {
+      if (!matchMap.has(row.matchId)) {
+        matchMap.set(row.matchId, {
+          matchId: row.matchId,
+          label: `${row.match.homeTeam} vs ${row.match.awayTeam}`,
+          kickoffTime: row.match.kickoffTime.toISOString(),
+          points: {},
+        })
+      }
+      matchMap.get(row.matchId)!.points[row.userId] = row.points
+    }
+
+    // Compute cumulative totals per member
+    const running: Record<string, number> = Object.fromEntries(memberIds.map((id) => [id, 0]))
+    const history = Array.from(matchMap.values()).map((match) => {
+      for (const userId of memberIds) {
+        running[userId] += match.points[userId] ?? 0
+      }
+      return {
+        matchId: match.matchId,
+        label: match.label,
+        kickoffTime: match.kickoffTime,
+        cumulative: { ...running },
+      }
+    })
+
+    res.json({ members, history })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/leagues/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -49,8 +49,8 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryDataPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [active, setActive] = useState(false)
-  const tooltipRef = useRef<{ payload: TooltipEntry[]; point: ChartPoint } | null>(null)
+  const [tipData, setTipData] = useState<{ payload: TooltipEntry[]; point: ChartPoint } | null>(null)
+  const lastIndexRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function HistoryPage() {
   ]
 
   const chartWidth = Math.max(360, chartData.length * 32)
-  const tip = active ? tooltipRef.current : null
+  const tip = tipData
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -141,8 +141,8 @@ export default function HistoryPage() {
                   {[...tip.payload].sort((a, b) => b.value - a.value).map((entry) => {
                     const member = members.find((m) => m.userId === entry.dataKey)
                     return (
-                      <div key={entry.dataKey} className="flex items-center gap-1.5 text-sm">
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: entry.stroke }} />
+                      <div key={entry.dataKey} className="flex items-center gap-1.5 text-xs">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: entry.stroke }} />
                         <span className="text-gray-300">{member ? shortName(member.name) : entry.dataKey}</span>
                         <span className="font-bold text-white">{entry.value} pts</span>
                       </div>
@@ -159,11 +159,8 @@ export default function HistoryPage() {
           <div
             ref={scrollRef}
             className="overflow-x-auto"
-            style={{ height: 'calc(100dvh - 450px)', minHeight: 200 }}
-            onMouseMove={() => setActive(true)}
-            onMouseLeave={() => setActive(false)}
-            onTouchStart={() => setActive(true)}
-            onTouchEnd={() => setActive(false)}
+            style={{ height: 'calc(100dvh - 500px)', minHeight: 200 }}
+            onMouseLeave={() => { lastIndexRef.current = null; setTipData(null) }}
           >
             <div style={{ width: chartWidth, height: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -184,10 +181,19 @@ export default function HistoryPage() {
                   <Tooltip
                     content={(props: unknown) => {
                       const p = props as { active?: boolean; payload?: TooltipEntry[] }
-                      if (p.active && p.payload?.length) {
-                        tooltipRef.current = { payload: p.payload, point: p.payload[0].payload }
+                      if (!p.active || !p.payload?.length) {
+                        if (lastIndexRef.current !== null) {
+                          lastIndexRef.current = null
+                          queueMicrotask(() => setTipData(null))
+                        }
                       } else {
-                        tooltipRef.current = null
+                        const index = (p.payload[0].payload as ChartPoint).index
+                        if (index !== lastIndexRef.current) {
+                          lastIndexRef.current = index
+                          const point = p.payload[0].payload as ChartPoint
+                          const payload = p.payload as TooltipEntry[]
+                          queueMicrotask(() => setTipData({ payload, point }))
+                        }
                       }
                       return null
                     }}
@@ -212,18 +218,6 @@ export default function HistoryPage() {
           </div>
           <p className="mt-1 text-center text-xs text-gray-500">Partido</p>
 
-          {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 px-2">
-            {members.map((member, i) => (
-              <div key={member.userId} className="flex items-center gap-1.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: LINE_COLORS[i % LINE_COLORS.length] }}
-                />
-                <span className="text-xs text-gray-300">{shortName(member.name)}</span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </main>

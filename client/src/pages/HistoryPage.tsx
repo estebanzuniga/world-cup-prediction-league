@@ -9,16 +9,16 @@ import { getLeagueHistory, type HistoryMember, type HistoryDataPoint } from '../
 import { isApiError } from '../api'
 
 const LINE_COLORS = [
-  '#4ade80',
-  '#60a5fa',
   '#f87171',
+  '#f472b6',
+  '#60a5fa',
   '#facc15',
   '#a78bfa',
   '#fb923c',
   '#34d399',
   '#38bdf8',
   '#fbbf24',
-  '#f472b6',
+  '#4ade80',
   '#22d3ee',
   '#818cf8',
   '#a3e635',

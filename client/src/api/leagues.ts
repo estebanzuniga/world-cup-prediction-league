@@ -29,6 +29,7 @@ export interface MemberPrediction {
   userId: string
   predictedHome: number
   predictedAway: number
+  predictedAdvancing: string | null
   points: number | null
   breakdown: 'exact' | 'result' | 'adv_diff' | 'adv_only' | 'one_team' | 'none' | null
 }
@@ -41,6 +42,7 @@ export interface FinishedMatchWithPredictions {
   awayTeamCrestUrl: string | null
   kickoffTime: string
   status: string
+  stage: string | null
   homeScore: number | null
   awayScore: number | null
   predictions: MemberPrediction[]

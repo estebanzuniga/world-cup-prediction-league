@@ -23,6 +23,8 @@ function MatchCrest({ url, name }: { url: string | null; name: string }) {
   )
 }
 
+const KNOCKOUT_STAGES = new Set(['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'])
+
 const BREAKDOWN_STYLES: Record<string, string> = {
   exact:    'text-green-400',
   adv_diff: 'text-emerald-400',
@@ -129,6 +131,11 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
               {/* Member predictions */}
               {members.map(member => {
                 const pred = selectedMatch.predictions.find(p => p.userId === member.userId)
+                const isPredictedDraw = pred && pred.predictedHome === pred.predictedAway
+                const isKnockout = selectedMatch.stage && KNOCKOUT_STAGES.has(selectedMatch.stage)
+                const advancingTeamName = isPredictedDraw && isKnockout && pred.predictedAdvancing
+                  ? toSpanish(pred.predictedAdvancing === 'HOME' ? selectedMatch.homeTeam : selectedMatch.awayTeam)
+                  : null
                 return (
                   <div
                     key={member.userId}
@@ -139,6 +146,9 @@ export default function PredictionsModal({ leagueId, members, onClose }: Props) 
                       <div className="ml-3 shrink-0 text-right">
                         <span className="font-mono text-sm text-gray-300">
                           {pred.predictedHome}–{pred.predictedAway}
+                          {advancingTeamName && (
+                            <span className="ml-1 font-sans text-xs text-gray-400">({advancingTeamName})</span>
+                          )}
                         </span>
                         {!isLive && pred.breakdown !== null && (
                           <span className={`ml-2 text-xs font-semibold ${BREAKDOWN_STYLES[pred.breakdown]}`}>

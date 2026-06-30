@@ -250,9 +250,9 @@ router.get('/:id/predictions', async (req: Request, res: Response, next: NextFun
             { homeScore: match.homeScore, awayScore: match.awayScore },
             { stage: match.stage, advancingTeam: match.advancingTeam }
           )
-          return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: scored.points, breakdown: scored.breakdown }
+          return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, predictedAdvancing: p.predictedAdvancing, points: scored.points, breakdown: scored.breakdown }
         }
-        return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, points: null, breakdown: null }
+        return { userId: p.userId, predictedHome: p.predictedHome, predictedAway: p.predictedAway, predictedAdvancing: p.predictedAdvancing, points: null, breakdown: null }
       }),
     }))
     res.json({ matches: result })
